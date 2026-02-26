@@ -1,104 +1,106 @@
 'use client';
-
 import { useState, useEffect } from 'react';
-import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, FileText } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Package, Loader2, Calendar, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 interface Order {
     _id: string;
-    order_id: string;
-    master_order_id: string;
+    order_id?: string;
     total_amount: number;
-    status: 'Pending' | 'Accepted' | 'Processing' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
+    status: string;
     payment_status: string;
-    created_at: string;
+    createdAt: string;
+    vendor_id?: { store_name: string; phone: string };
     products: any[];
 }
 
-export default function OrdersPage() {
+const Badge = ({ s }: { s: string }) => {
+    const m: Record<string, string[]> = {
+        Delivered: ['#dcfce7', '#15803d'],
+        Cancelled: ['#fee2e2', '#dc2626'],
+        Pending: ['#fef9c3', '#92400e'],
+        Processing: ['#dbeafe', '#1d4ed8'],
+        Accepted: ['#dbeafe', '#1d4ed8'],
+        'Out for Delivery': ['#ede9fe', '#6d28d9'],
+    };
+    const [bg, color] = m[s] || ['#f1f5f9', '#475569'];
+    return <span style={{ background: bg, color, fontSize: '0.65rem', fontWeight: 800, padding: '0.25rem 0.625rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s}</span>;
+};
+
+export default function UserOrders() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch('/api/orders')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setOrders(data);
-                setLoading(false);
-            })
+            .then(r => r.json())
+            .then(d => { if (Array.isArray(d)) setOrders(d); setLoading(false); })
             .catch(() => setLoading(false));
     }, []);
 
-    const StatusIcon = ({ status }: { status: string }) => {
-        switch (status) {
-            case 'Pending': return <Clock className="text-warning-color" size={20} />;
-            case 'Accepted': return <CheckCircle className="text-info-color" size={20} />;
-            case 'Processing': return <Package className="text-secondary" size={20} />;
-            case 'Out for Delivery': return <Truck className="text-accent-color" size={20} />;
-            case 'Delivered': return <CheckCircle className="text-success-color" size={20} />;
-            case 'Cancelled': return <XCircle className="text-error-color" size={20} />;
-            default: return <Clock size={20} />;
-        }
-    };
+    if (loading) return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
+            <Loader2 className="animate-spin" size={32} color="var(--accent)" />
+            <p style={{ color: 'var(--gray-400)', fontSize: '0.875rem' }}>Fetching your orders...</p>
+        </div>
+    );
 
     return (
-        <div className="container py-12 animate-fade-in">
-            <div className="flex justify-between items-center mb-10">
-                <div>
-                    <h1 className="text-3xl font-bold">My Orders</h1>
-                    <p className="text-secondary text-sm">Track your current and past wholesale purchases.</p>
+        <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '2rem 1rem' }}>
+            <div style={{ maxWidth: 800, margin: '0 auto' }}>
+                <div style={{ marginBottom: '2rem' }}>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 900, fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>My Orders</h1>
+                    <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>History of all your wholesale purchases.</p>
                 </div>
-                <Link href="/" className="btn btn-primary px-6 py-2 text-sm">Start New Order</Link>
-            </div>
 
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black"></div>
-                </div>
-            ) : orders.length === 0 ? (
-                <div className="card p-20 text-center border-dashed border-border-color opacity-50">
-                    <Package className="mx-auto mb-6 text-secondary" size={48} strokeWidth={1} />
-                    <p className="text-secondary text-lg">No orders found.</p>
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {orders.map((order) => (
-                        <div key={order._id} className="card p-6 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-black transition-colors cursor-pointer">
-                            <div className="flex items-center gap-6">
-                                <div className="p-4 bg-surface-color rounded-lg">
-                                    <StatusIcon status={order.status} />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-xs font-bold text-secondary uppercase tracking-widest">Master Order ID</span>
-                                        <span className="badge badge-info scale-75 origin-left">{order.master_order_id}</span>
-                                    </div>
-                                    <h3 className="text-lg font-bold">Order {order.order_id}</h3>
-                                    <p className="text-secondary text-xs">{new Date(order.created_at).toLocaleString()}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 md:text-center">
-                                <div className="text-sm font-bold">₹{order.total_amount}</div>
-                                <div className="text-xs text-secondary mt-1">{order.products.length} Products</div>
-                            </div>
-
-                            <div className="flex items-center gap-4 w-full md:w-auto">
-                                <div className="flex-1 md:flex-initial">
-                                    <div className="text-xs font-bold text-secondary uppercase mb-1">Order Status</div>
-                                    <span className={`badge ${order.status === 'Delivered' ? 'badge-success' : order.status === 'Cancelled' ? 'badge-error' : 'badge-warning'}`}>
-                                        {order.status}
-                                    </span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button className="btn btn-outline p-2 px-3 text-xs flex gap-2"><FileText size={14} /> Invoice</button>
-                                    <button className="btn btn-primary p-2 px-3 text-xs"><ChevronRight size={14} /></button>
-                                </div>
-                            </div>
+                {orders.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '5rem 2rem', background: '#fff', borderRadius: 24, border: '1px solid var(--gray-100)' }}>
+                        <div style={{ width: 64, height: 64, background: 'var(--gray-50)', color: 'var(--gray-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', margin: '0 auto 1.5rem' }}>
+                            <ShoppingBag size={32} />
                         </div>
-                    ))}
-                </div>
-            )}
+                        <h3 style={{ marginBottom: '0.5rem' }}>No orders found</h3>
+                        <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', marginBottom: '2rem' }}>You haven't placed any orders yet.</p>
+                        <Link href="/" style={{ padding: '0.75rem 2rem', background: 'var(--gray-900)', color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: '0.875rem' }}>Start Shopping</Link>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gap: '1.25rem' }}>
+                        {orders.map(o => (
+                            <div key={o._id} style={{ background: '#fff', borderRadius: 20, border: '1px solid var(--gray-100)', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'transform 0.2s' }}>
+                                <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--gray-50)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Order ID</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'monospace' }}>#{o.order_id?.slice(-8) || o._id.slice(-8)}</div>
+                                    </div>
+                                    <Badge s={o.status} />
+                                </div>
+
+                                <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                            <Calendar size={14} color="var(--gray-400)" />
+                                            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>{new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Package size={14} color="var(--gray-400)" />
+                                            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>{o.products?.length || 0} Products</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Store</div>
+                                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--gray-800)' }}>{o.vendor_id?.store_name || 'Verified Vendor'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: 2 }}>{o.vendor_id?.phone}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Total Amount</div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--gray-900)' }}>₹{o.total_amount.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.65rem', color: '#16a34a', fontWeight: 700, marginTop: 2 }}>{o.payment_status?.toUpperCase() || 'PAID'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

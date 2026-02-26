@@ -18,14 +18,19 @@ async function dbConnect() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!, {
+    const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 8000,  // Fail fast — 8s timeout
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 20000,
-      family: 4, // Force IPv4 to bypass NAT64 translation bug on your network
-    }).then((m) => m).catch((err) => {
-      cached.promise = null; // Reset so next request retries
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+    };
+
+    console.log('🔗 Attempting to connect to MongoDB...');
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => {
+      console.log('✅ MongoDB Connected');
+      return m;
+    }).catch((err) => {
+      console.error('❌ MongoDB Connection Error:', err.message);
+      cached.promise = null;
       throw err;
     });
   }

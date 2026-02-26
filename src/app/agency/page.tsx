@@ -1,23 +1,26 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw, Search } from 'lucide-react';
 
-interface Order { _id: string; order_id: string; total_amount: number; status: string; createdAt: string; products: any[]; user_id?: { name: string; phone: string; address: string } | null; }
-interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; status: string; offer?: string; }
+interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; createdAt: string; products: any[]; user_id?: { name: string; phone: string; address: string } | null; }
+interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; }
 interface Wallet { totalRevenue: number; pendingAmount: number; totalPaid: number; orderCount: number; }
 
 const CATS = ['Pulses', 'Rice', 'Staples', 'Spices', 'Oil', 'Flour', 'Sugar', 'Dry Fruits', 'Other'];
 const STATUSES = ['Pending', 'Accepted', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+const PAYMENT_STATUSES = ['Unpaid', 'Paid', 'Pending Approval'];
+const UNITS = ['kg', 'g', 'pcs', 'pack', 'liter', 'ml'];
 
 const Badge = ({ s }: { s: string }) => {
   const m: Record<string, string[]> = {
-    'In Stock': ['#dcfce7', '#15803d'], Delivered: ['#dcfce7', '#15803d'],
-    'Out of Stock': ['#fee2e2', '#dc2626'], Cancelled: ['#fee2e2', '#dc2626'],
+    'In Stock': ['#dcfce7', '#15803d'], Delivered: ['#dcfce7', '#15803d'], Paid: ['#dcfce7', '#15803d'],
+    'Out of Stock': ['#fee2e2', '#dc2626'], Cancelled: ['#fee2e2', '#dc2626'], Unpaid: ['#fee2e2', '#dc2626'],
     Pending: ['#fef9c3', '#92400e'], Processing: ['#dbeafe', '#1d4ed8'],
     Accepted: ['#dbeafe', '#1d4ed8'], 'Out for Delivery': ['#ede9fe', '#6d28d9'],
+    'Pending Approval': ['#fef9c3', '#92400e'],
   };
   const [bg, color] = m[s] || ['#f1f5f9', '#475569'];
-  return <span style={{ background: bg, color, fontSize: '0.6875rem', fontWeight: 700, padding: '0.25rem 0.625rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{s}</span>;
+  return <span style={{ background: bg, color, fontSize: '0.65rem', fontWeight: 800, padding: '0.25rem 0.6rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{s}</span>;
 };
 
 const Modal = ({ title, onClose, children }: any) => (
@@ -46,7 +49,7 @@ const Sel = ({ opts, ...p }: any) => (
   </select>
 );
 
-export default function VendorPage() {
+export default function AgencyPage() {
   const [tab, setTab] = useState<'overview' | 'orders' | 'products'>('overview');
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -56,16 +59,17 @@ export default function VendorPage() {
   const [sel, setSel] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
-  const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', status: 'In Stock', offer: '' };
+  const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', offer: '' };
   const [pf, setPf] = useState(emptyP);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [or, pr, wr] = await Promise.all([
         fetch('/api/orders').catch(() => null),
-        fetch('/api/vendor/products').catch(() => null),
-        fetch('/api/vendor/wallet').catch(() => null),
+        fetch('/api/agency/products').catch(() => null),
+        fetch('/api/agency/wallet').catch(() => null),
       ]);
       const [od, pd, wd] = await Promise.all([
         or?.json().catch(() => []),
@@ -84,17 +88,17 @@ export default function VendorPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const updateOrder = async (id: string, status: string) => {
-    await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+  const updateOrder = async (id: string, updates: any) => {
+    await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
     load();
   };
 
   const saveProduct = async () => {
     setSaving(true); setErr('');
-    const body = { ...pf, price: Number(pf.price), stock: Number(pf.stock) };
+    const body = { ...pf, price: Number(pf.price), stock: Number(pf.stock), min_qty: Number(pf.min_qty) };
     if (!pf.offer) delete (body as any).offer;
     try {
-      const url = '/api/vendor/products';
+      const url = '/api/agency/products';
       const method = modal === 'add' ? 'POST' : 'PATCH';
       const payload = modal === 'edit' ? { productId: sel!._id, ...body } : body;
       const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -107,13 +111,13 @@ export default function VendorPage() {
 
   const deleteProd = async (productId: string) => {
     if (!confirm('Delete this product?')) return;
-    await fetch('/api/vendor/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+    await fetch('/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
     load();
   };
 
   const openEdit = (p: Product) => {
     setSel(p);
-    setPf({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), status: p.status, offer: p.offer || '' });
+    setPf({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), unit: p.unit || 'kg', min_qty: String(p.min_qty || 1), status: p.status, offer: p.offer || '' });
     setModal('edit');
   };
 
@@ -132,9 +136,9 @@ export default function VendorPage() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a', marginBottom: '0.25rem' }}>Vendor Dashboard</p>
-            <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif' }}>My Store</h1>
-            <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Manage products, fulfil orders, track earnings.</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a', marginBottom: '0.25rem' }}>Agency Dashboard</p>
+            <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif' }}>My Agency</h1>
+            <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Manage products, fulfil orders, and optimize your agency operations.</p>
           </div>
           <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', border: '1.5px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.875rem', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
             <RefreshCw size={15} /> Refresh
@@ -157,16 +161,35 @@ export default function VendorPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', marginBottom: '2rem', width: 'fit-content', overflowX: 'auto' }}>
-          {[
-            { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
-            { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
-            { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
-          ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? '#0f172a' : '#64748b', boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>
-              {t.icon} {t.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', width: 'fit-content', overflowX: 'auto' }}>
+            {[
+              { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
+              { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
+              { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
+            ].map(t => (
+              <button key={t.id} onClick={() => { setTab(t.id as any); setSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? '#0f172a' : '#64748b', boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+
+          {tab !== 'overview' && (
+            <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                type="text"
+                placeholder={`Search ${tab}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem',
+                  borderRadius: 12, border: '1.5px solid #e2e8f0',
+                  fontSize: '0.875rem', outline: 'none', background: '#fff'
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* OVERVIEW */}
@@ -205,33 +228,38 @@ export default function VendorPage() {
         {tab === 'orders' && (
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.25rem' }}>Your Orders</h2>
-            {orders.length === 0 ? (
+            {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
               <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
-                <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} /><p>No orders yet.</p>
+                <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
+                <p>{searchQuery ? 'No orders match your search.' : 'No orders yet.'}</p>
               </div>
             ) : (
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
                     <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Order ID', 'Customer', 'Phone', 'Address', 'Amount', 'Status', 'Date'].map(h => (
+                      {['Order ID', 'Customer', 'Items', 'Amount', 'Payment', 'Status', 'Date'].map(h => (
                         <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
-                      {orders.map(o => (
+                      {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).map(o => (
                         <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem' }}>#{o.order_id?.slice(-6) || o._id.slice(-6)}</td>
                           <td style={{ padding: '1rem' }}>
                             <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>{o.user_id?.name || '—'}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{o.user_id?.phone || '—'}</div>
                           </td>
-                          <td style={{ padding: '1rem' }}>
-                            <a href={`tel:${o.user_id?.phone}`} style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.875rem', textDecoration: 'none' }}>{o.user_id?.phone || '—'}</a>
-                          </td>
-                          <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8125rem', maxWidth: 160 }}>{o.user_id?.address || '—'}</td>
+                          <td style={{ padding: '1rem', color: '#64748b' }}>{o.products?.length || 0} items</td>
                           <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>₹{o.total_amount}</td>
                           <td style={{ padding: '1rem' }}>
-                            <select value={o.status} onChange={e => updateOrder(o._id, e.target.value)}
+                            <select value={o.payment_status} onChange={e => updateOrder(o._id, { payment_status: e.target.value })}
+                              style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none', color: o.payment_status === 'Paid' ? '#16a34a' : '#dc2626' }}>
+                              {PAYMENT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <select value={o.status} onChange={e => updateOrder(o._id, { status: e.target.value })}
                               style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none' }}>
                               {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
@@ -257,29 +285,31 @@ export default function VendorPage() {
                 <Plus size={16} /> Add Product
               </button>
             </div>
-            {products.length === 0 ? (
+            {products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
               <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
-                <Package size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} /><p>No products yet. Click "Add Product" to get started.</p>
+                <Package size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
+                <p>{searchQuery ? 'No products match your search.' : 'No products yet. Click "Add Product" to get started.'}</p>
               </div>
             ) : (
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 600 }}>
                     <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Product', 'Category', 'Price', 'Stock', 'Status', 'Actions'].map(h => (
+                      {['Product', 'Category', 'Price/Unit', 'Stock', 'Min Qty', 'Status', 'Actions'].map(h => (
                         <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
-                      {products.map(p => (
+                      {products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                         <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '1rem' }}>
                             <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
-                            <div style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                            {p.stock < 10 && <span style={{ fontSize: '0.6rem', color: '#dc2626', background: '#fee2e2', padding: '2px 5px', borderRadius: 4, fontWeight: 800, marginTop: 4, display: 'inline-block' }}>LOW STOCK</span>}
                           </td>
                           <td style={{ padding: '1rem', color: '#475569' }}>{p.category}</td>
-                          <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price}</td>
+                          <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price} / {p.unit}</td>
                           <td style={{ padding: '1rem', color: p.stock < 10 ? '#dc2626' : '#475569', fontWeight: p.stock < 10 ? 700 : 400 }}>{p.stock}</td>
+                          <td style={{ padding: '1rem', fontWeight: 700 }}>{p.min_qty} {p.unit}</td>
                           <td style={{ padding: '1rem' }}><Badge s={p.status} /></td>
                           <td style={{ padding: '1rem' }}>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -315,7 +345,11 @@ export default function VendorPage() {
               <SI label="Price (₹)"><Inp type="number" min="0" placeholder="0" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
               <SI label="Stock Qty"><Inp type="number" min="0" placeholder="0" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
             </div>
-            <SI label="Offer Badge (optional)"><Inp placeholder="e.g. Best Deal" value={pf.offer} onChange={(e: any) => setPf(p => ({ ...p, offer: e.target.value }))} /></SI>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+              <SI label="Sales Unit"><Sel opts={UNITS} value={pf.unit} onChange={(e: any) => setPf(p => ({ ...p, unit: e.target.value }))} /></SI>
+              <SI label="Min. Order Qty"><Inp type="number" min="1" placeholder="1" value={pf.min_qty} onChange={(e: any) => setPf(p => ({ ...p, min_qty: e.target.value }))} /></SI>
+            </div>
+            <SI label="Offer Badge (optional)"><Inp placeholder="e.g. Bulk Buy Discount" value={pf.offer} onChange={(e: any) => setPf(p => ({ ...p, offer: e.target.value }))} /></SI>
             <button onClick={saveProduct} disabled={saving}
               style={{ padding: '0.75rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Saving...' : (modal === 'add' ? 'Add Product' : 'Save Changes')}

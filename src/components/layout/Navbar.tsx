@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package } from 'lucide-react';
+import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard } from 'lucide-react';
 import { TokenPayload } from '@/lib/auth';
 import { useCart } from '@/context/CartContext';
 import { useState } from 'react';
@@ -14,6 +14,16 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
     const router = useRouter();
     const { totalItems, totalPrice } = useCart();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [unpaidAmount, setUnpaidAmount] = useState<number | null>(null);
+
+    useState(() => {
+        if (session && session.role === 'user') {
+            fetch('/api/orders/unpaid-total')
+                .then(r => r.json())
+                .then(d => { if (typeof d.totalUnpaid === 'number') setUnpaidAmount(d.totalUnpaid); })
+                .catch(() => { });
+        }
+    });
 
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -41,11 +51,19 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                     {/* Right: User + Options */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         {session && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.25rem 0.5rem', borderRadius: 12, background: 'var(--gray-50)', border: '1px solid var(--gray-100)' }}>
-                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--gray-200)' }}>
-                                    <User size={12} color="var(--gray-500)" />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                {session.role === 'user' && unpaidAmount !== null && unpaidAmount > 0 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: 10, background: '#fff5f5', border: '1px solid #fee2e2', color: '#dc2626', marginRight: '0.4rem' }}>
+                                        <CreditCard size={12} />
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>₹{unpaidAmount.toLocaleString()} Due</span>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.25rem 0.5rem', borderRadius: 12, background: 'var(--gray-50)', border: '1px solid var(--gray-100)' }}>
+                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--gray-200)' }}>
+                                        <User size={12} color="var(--gray-500)" />
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-700)', maxWidth: '70px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name.split(' ')[0]}</span>
                                 </div>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-700)', maxWidth: '70px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name.split(' ')[0]}</span>
                             </div>
                         )}
 
@@ -85,7 +103,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                                 <>
                                     <MenuLink href="/" icon={<Store size={16} />} label="Marketplace" onClick={() => setMenuOpen(false)} />
                                     <MenuLink href="/admin" icon={<ShieldCheck size={16} />} label="Admin Portal" onClick={() => setMenuOpen(false)} />
-                                    <MenuLink href="/vendor" icon={<LayoutGrid size={16} />} label="Vendor Panel" onClick={() => setMenuOpen(false)} />
+                                    <MenuLink href="/agency" icon={<LayoutGrid size={16} />} label="Agency Panel" onClick={() => setMenuOpen(false)} />
                                     <MenuLink href="/cart" icon={<ShoppingCart size={16} />} label="My Cart" onClick={() => setMenuOpen(false)} />
                                 </>
                             ) : session ? (
@@ -97,7 +115,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                                             <MenuLink href="/cart" icon={<ShoppingCart size={16} />} label="My Cart" onClick={() => setMenuOpen(false)} />
                                         </>
                                     )}
-                                    {session.role === 'vendor' && <MenuLink href="/vendor" icon={<LayoutGrid size={16} />} label="Dashboard" onClick={() => setMenuOpen(false)} />}
+                                    {session.role === 'vendor' && <MenuLink href="/agency" icon={<LayoutGrid size={16} />} label="Agency Dashboard" onClick={() => setMenuOpen(false)} />}
                                     {session.role === 'admin' && <MenuLink href="/admin" icon={<ShieldCheck size={16} />} label="Admin Portal" onClick={() => setMenuOpen(false)} />}
                                     <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--red)', fontSize: '0.85rem', fontWeight: 600 }}>
                                         <LogOut size={16} /> Logout
@@ -113,7 +131,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
 
             {/* Mobile Bottom Cart Bar */}
             {totalItems > 0 && pathname !== '/cart' && (
-                <div className="mobile-cart-bar">
+                <div className="bottom-cart-bar">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>{totalItems} item{totalItems > 1 ? 's' : ''}</span>
@@ -129,20 +147,17 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
             <style>{`
                 @media (max-width: 768px) {
                     .hide-mobile { display: none; }
-                    .mobile-cart-bar {
-                        position: fixed;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        background: #0f172a;
-                        padding: 0.85rem 1.25rem;
-                        z-index: 1000;
-                        border-top: 1px solid rgba(255,255,255,0.1);
-                        display: block !important;
-                    }
                 }
-                @media (min-width: 769px) {
-                    .mobile-cart-bar { display: none !important; }
+                .bottom-cart-bar {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: #0f172a;
+                    padding: 0.85rem 1.25rem;
+                    z-index: 1000;
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    display: block;
                 }
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(10px); }

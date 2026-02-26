@@ -4,16 +4,18 @@ import { useRouter } from 'next/navigation';
 import {
     Users, Box, ShoppingBag, TrendingUp, ShieldCheck,
     Plus, Edit2, Trash2, CheckCircle, XCircle, X,
-    Eye, EyeOff, DollarSign, Package, AlertCircle, RefreshCw
+    Eye, EyeOff, DollarSign, Package, AlertCircle, RefreshCw, Search
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────── */
-interface Vendor { _id: string; name: string; store_name: string; gst_number: string; phone: string; email: string; store_address: string; turnover: string; status: 'approved' | 'blocked' | 'pending'; createdAt: string; }
-interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; status: string; vendor_id: { _id: string; store_name: string } | null; offer?: string; }
+interface Agency { _id: string; name: string; store_name: string; gst_number: string; phone: string; email: string; store_address: string; turnover: string; status: 'approved' | 'blocked' | 'pending'; createdAt: string; }
+interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id: { _id: string; store_name: string } | null; offer?: string; }
 interface Order { _id: string; order_id: string; master_order_id: string; total_amount: number; status: string; payment_status: string; createdAt: string; vendor_id: { store_name: string } | null; user_id: { name: string; phone: string } | null; products: any[]; }
 
 const CATEGORIES = ['Pulses', 'Rice', 'Staples', 'Spices', 'Oil', 'Flour', 'Sugar', 'Dry Fruits', 'Other'];
 const ORDER_STATUSES = ['Pending', 'Accepted', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+const PAYMENT_STATUSES = ['Unpaid', 'Paid', 'Pending Approval'];
+const UNITS = ['kg', 'g', 'pcs', 'pack', 'liter', 'ml'];
 
 /* ─── Mini Components ────────────────────────────────────── */
 const Stat = ({ icon, label, value, color }: any) => (
@@ -59,20 +61,20 @@ const Select = ({ options, ...props }: any) => (
 
 const Badge = ({ status }: { status: string }) => {
     const map: Record<string, [string, string]> = {
-        approved: ['#dcfce7', '#15803d'], active: ['#dcfce7', '#15803d'], 'In Stock': ['#dcfce7', '#15803d'],
-        blocked: ['#fee2e2', '#ef4444'], 'Out of Stock': ['#fee2e2', '#ef4444'], Cancelled: ['#fee2e2', '#ef4444'],
-        pending: ['#fef9c3', '#92400e'], Pending: ['#fef9c3', '#92400e'],
+        approved: ['#dcfce7', '#15803d'], active: ['#dcfce7', '#15803d'], 'In Stock': ['#dcfce7', '#15803d'], Paid: ['#dcfce7', '#15803d'],
+        blocked: ['#fee2e2', '#ef4444'], 'Out of Stock': ['#fee2e2', '#ef4444'], Cancelled: ['#fee2e2', '#ef4444'], Unpaid: ['#fee2e2', '#ef4444'],
+        pending: ['#fef9c3', '#92400e'], Pending: ['#fef9c3', '#92400e'], 'Pending Approval': ['#fef9c3', '#92400e'],
         Delivered: ['#dcfce7', '#15803d'], Processing: ['#dbeafe', '#1d4ed8'], Accepted: ['#dbeafe', '#1d4ed8'], 'Out for Delivery': ['#ede9fe', '#6d28d9'],
     };
     const [bg, color] = map[status] || ['#f1f5f9', '#475569'];
-    return <span style={{ background: bg, color, fontSize: '0.6875rem', fontWeight: 700, padding: '0.25rem 0.625rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{status}</span>;
+    return <span style={{ background: bg, color, fontSize: '0.65rem', fontWeight: 800, padding: '0.25rem 0.6rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{status}</span>;
 };
 
 /* ─── Main Component ──────────────────────────────────────── */
 export default function AdminPage() {
     const router = useRouter();
     const [tab, setTab] = useState<'overview' | 'vendors' | 'products' | 'orders'>('overview');
-    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [vendors, setVendors] = useState<Agency[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,13 +82,14 @@ export default function AdminPage() {
     const [modal, setModal] = useState<'vendor' | 'product' | 'editVendor' | 'editProduct' | null>(null);
     const [selected, setSelected] = useState<any>(null);
     const [showPw, setShowPw] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     /* Vendor form */
     const emptyV = { name: '', store_name: '', store_address: '', gst_number: '', turnover: '', phone: '', email: '', password: '' };
     const [vForm, setVForm] = useState(emptyV);
 
     /* Product form */
-    const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', status: 'In Stock', vendor_id: '', offer: '' };
+    const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', vendor_id: '', offer: '' };
     const [pForm, setPForm] = useState(emptyP);
 
     const [saving, setSaving] = useState(false);
@@ -97,7 +100,7 @@ export default function AdminPage() {
         setLoadError('');
         try {
             const [vr, pr, or] = await Promise.all([
-                fetch('/api/admin/vendors'),
+                fetch('/api/admin/agencies'),
                 fetch('/api/admin/products'),
                 fetch('/api/admin/orders')
             ]);
@@ -106,11 +109,18 @@ export default function AdminPage() {
                 router.push('/login');
                 return;
             }
-            const [vd, pd, od] = await Promise.all([vr.json(), pr.json(), or.json()]);
-            if (vd.error) { setLoadError(vd.error); setLoading(false); return; }
+            const [vd, pd, od] = await Promise.all([
+                vr.ok ? vr.json() : Promise.resolve([]),
+                pr.ok ? pr.json() : Promise.resolve([]),
+                or.ok ? or.json() : Promise.resolve([])
+            ]);
+
             if (Array.isArray(vd)) setVendors(vd);
             if (Array.isArray(pd)) setProducts(pd);
             if (Array.isArray(od)) setOrders(od);
+
+            if (!vr.ok && vr.status === 401) { router.push('/login'); return; }
+            if (!vr.ok || !pr.ok || !or.ok) setLoadError('Some data failed to load. Please try again.');
         } catch (e: any) {
             setLoadError('Could not connect to database. Check your internet connection.');
         }
@@ -122,7 +132,7 @@ export default function AdminPage() {
     /* ── Vendor actions ── */
     const addVendor = async () => {
         setSaving(true); setErr('');
-        const r = await fetch('/api/admin/vendors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vForm) });
+        const r = await fetch('/api/admin/agencies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vForm) });
         const d = await r.json();
         if (d.success) { setModal(null); setVForm(emptyV); load(); }
         else setErr(d.error || 'Failed');
@@ -130,20 +140,20 @@ export default function AdminPage() {
     };
 
     const updateVendor = async (vendorId: string, patch: any) => {
-        await fetch('/api/admin/vendors', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId, ...patch }) });
+        await fetch('/api/admin/agencies', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId, ...patch }) });
         load();
     };
 
     const deleteVendor = async (vendorId: string) => {
-        if (!confirm('Delete this vendor? This cannot be undone.')) return;
-        await fetch('/api/admin/vendors', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId }) });
+        if (!confirm('Delete this agency? This cannot be undone.')) return;
+        await fetch('/api/admin/agencies', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId }) });
         load();
     };
 
     /* ── Product actions ── */
     const addProduct = async () => {
         setSaving(true); setErr('');
-        const payload = { ...pForm, price: Number(pForm.price), stock: Number(pForm.stock) };
+        const payload = { ...pForm, price: Number(pForm.price), stock: Number(pForm.stock), min_qty: Number(pForm.min_qty) };
         if (!pForm.offer) delete (payload as any).offer;
         if (!pForm.vendor_id) delete (payload as any).vendor_id;
         const r = await fetch('/api/admin/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -155,7 +165,7 @@ export default function AdminPage() {
 
     const saveProduct = async () => {
         setSaving(true); setErr('');
-        const payload = { productId: selected._id, ...pForm, price: Number(pForm.price), stock: Number(pForm.stock) };
+        const payload = { productId: selected._id, ...pForm, price: Number(pForm.price), stock: Number(pForm.stock), min_qty: Number(pForm.min_qty) };
         const r = await fetch('/api/admin/products', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const d = await r.json();
         if (d.success) { setModal(null); load(); }
@@ -174,29 +184,33 @@ export default function AdminPage() {
         load();
     };
 
-    const openEditProduct = (p: Product) => {
+    const openEditProduct = (p: any) => {
         setSelected(p);
-        setPForm({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), status: p.status, vendor_id: p.vendor_id?._id || '', offer: p.offer || '' });
+        setPForm({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), unit: p.unit || 'kg', min_qty: String(p.min_qty || 1), status: p.status, vendor_id: p.vendor_id?._id || '', offer: p.offer || '' });
         setModal('editProduct');
     };
 
-    if (loading) return (
-        <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-            <div style={{ width: 40, height: 40, border: '3px solid var(--gray-200)', borderTopColor: 'var(--gray-900)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-            <p style={{ color: 'var(--gray-400)', fontSize: '0.875rem' }}>Loading admin data...</p>
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    if (loadError) return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ background: '#fff', padding: '2.5rem', borderRadius: 24, boxShadow: 'var(--shadow-lg)', border: '1px solid var(--gray-100)', maxWidth: 400 }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
+                    <AlertCircle size={24} />
+                </div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--gray-900)' }}>Connection Error</h3>
+                <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>{loadError}</p>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button onClick={() => window.location.reload()} style={{ flex: 1, padding: '0.75rem', borderRadius: 10, border: '1.5px solid var(--gray-200)', background: '#fff', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>Reload Page</button>
+                    <button onClick={load} style={{ flex: 1, padding: '0.75rem', borderRadius: 10, border: 'none', background: 'var(--gray-900)', color: '#fff', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>Retry Now</button>
+                </div>
+            </div>
         </div>
     );
 
-    if (loadError) return (
-        <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
-            <AlertCircle size={48} color="#ef4444" strokeWidth={1.5} />
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Failed to Load Data</h2>
-            <p style={{ color: '#64748b', maxWidth: 400 }}>{loadError}</p>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-                <button onClick={load} style={{ padding: '0.625rem 1.5rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => router.push('/login')} style={{ padding: '0.625rem 1.5rem', background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Re-login</button>
-            </div>
+    if (loading) return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <div style={{ width: 40, height: 40, border: '3px solid var(--gray-100)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <p style={{ color: 'var(--gray-400)', fontSize: '0.875rem', marginTop: '1rem', fontWeight: 500 }}>Fetching dashboard data...</p>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 
@@ -215,7 +229,7 @@ export default function AdminPage() {
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)' }}>Super Admin</span>
                         </div>
                         <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.2rem' }}>KiranaHub Admin</h1>
-                        <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>Full control of vendors, products, orders and marketplace.</p>
+                        <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>Full control of agencies, products, orders and marketplace.</p>
                     </div>
                     <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 8, background: '#fff', fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-600)', cursor: 'pointer' }}>
                         <RefreshCw size={15} /> Refresh
@@ -223,24 +237,43 @@ export default function AdminPage() {
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', background: 'var(--gray-100)', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', marginBottom: '2rem', overflowX: 'auto', width: 'fit-content', maxWidth: '100%' }}>
-                    {[
-                        { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
-                        { id: 'vendors', icon: <Users size={16} />, label: `Vendors (${vendors.length})` },
-                        { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
-                        { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
-                    ].map(t => (
-                        <button key={t.id} onClick={() => setTab(t.id as any)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? 'var(--gray-900)' : 'var(--gray-500)', boxShadow: tab === t.id ? 'var(--shadow-sm)' : 'none' }}>
-                            {t.icon} {t.label}
-                        </button>
-                    ))}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', background: 'var(--gray-100)', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', overflowX: 'auto', width: 'fit-content' }}>
+                        {[
+                            { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
+                            { id: 'vendors', icon: <Users size={16} />, label: `Agencies (${vendors.length})` },
+                            { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
+                            { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
+                        ].map(t => (
+                            <button key={t.id} onClick={() => { setTab(t.id as any); setSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? 'var(--gray-900)' : 'var(--gray-500)', boxShadow: tab === t.id ? 'var(--shadow-sm)' : 'none' }}>
+                                {t.icon} {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {tab !== 'overview' && (
+                        <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+                            <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
+                            <input
+                                type="text"
+                                placeholder={`Search ${tab}...`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{
+                                    width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem',
+                                    borderRadius: 12, border: '1.5px solid var(--gray-200)',
+                                    fontSize: '0.875rem', outline: 'none', background: '#fff'
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* ── OVERVIEW ── */}
                 {tab === 'overview' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                            <Stat icon={<Users size={22} />} label="Total Vendors" value={vendors.length} color="var(--blue)" />
+                            <Stat icon={<Users size={22} />} label="Total Agencies" value={vendors.length} color="var(--blue)" />
                             <Stat icon={<Package size={22} />} label="Products Listed" value={products.length} color="var(--accent)" />
                             <Stat icon={<ShoppingBag size={22} />} label="Total Orders" value={orders.length} color="#8b5cf6" />
                             <Stat icon={<DollarSign size={22} />} label="Revenue" value={`₹${totalRevenue.toLocaleString()}`} color="var(--accent)" />
@@ -250,7 +283,7 @@ export default function AdminPage() {
                             {/* Pending vendors */}
                             <div style={{ background: '#fff', border: '1px solid var(--gray-100)', borderRadius: 16, padding: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                                    <h3 style={{ fontSize: '1rem' }}>Recent Vendors</h3>
+                                    <h3 style={{ fontSize: '1rem' }}>Recent Agencies</h3>
                                     <button onClick={() => setTab('vendors')} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>View All →</button>
                                 </div>
                                 {vendors.slice(0, 5).map(v => (
@@ -288,16 +321,16 @@ export default function AdminPage() {
                 {tab === 'vendors' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            <h2 style={{ fontSize: '1.125rem' }}>All Vendors</h2>
+                            <h2 style={{ fontSize: '1.125rem' }}>All Agencies</h2>
                             <button onClick={() => { setErr(''); setVForm(emptyV); setModal('vendor'); }} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.25rem', background: 'var(--gray-900)', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>
-                                <Plus size={16} /> Add Vendor
+                                <Plus size={16} /> Add Agency
                             </button>
                         </div>
 
-                        {vendors.length === 0 ? (
+                        {vendors.filter(v => v.store_name.toLowerCase().includes(searchQuery.toLowerCase()) || v.phone.includes(searchQuery)).length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed var(--gray-200)', borderRadius: 16, color: 'var(--gray-400)' }}>
                                 <Users size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                                <p>No vendors yet. Add your first vendor.</p>
+                                <p>{searchQuery ? 'No vendors match your search.' : 'No vendors yet. Add your first vendor.'}</p>
                             </div>
                         ) : (
                             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-100)', overflow: 'hidden' }}>
@@ -305,13 +338,13 @@ export default function AdminPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 700 }}>
                                         <thead>
                                             <tr style={{ background: 'var(--gray-50)' }}>
-                                                {['Store Name', 'Owner', 'Phone', 'GST', 'Status', 'Actions'].map(h => (
+                                                {['Agency Name', 'Owner', 'Phone', 'GST', 'Status', 'Actions'].map(h => (
                                                     <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-100)', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {vendors.map(v => (
+                                            {vendors.filter(v => v.store_name.toLowerCase().includes(searchQuery.toLowerCase()) || v.phone.includes(searchQuery)).map(v => (
                                                 <tr key={v._id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                                                     <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--gray-900)' }}>{v.store_name}</td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-600)' }}>{v.name}</td>
@@ -349,10 +382,10 @@ export default function AdminPage() {
                             </button>
                         </div>
 
-                        {products.length === 0 ? (
+                        {products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed var(--gray-200)', borderRadius: 16, color: 'var(--gray-400)' }}>
                                 <Package size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                                <p>No products yet. Add your first product.</p>
+                                <p>{searchQuery ? 'No products match your search.' : 'No products yet. Add your first product.'}</p>
                             </div>
                         ) : (
                             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-100)', overflow: 'hidden' }}>
@@ -366,9 +399,12 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {products.map(p => (
+                                            {products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                                                 <tr key={p._id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                                                    <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--gray-900)' }}>{p.name_en}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{p.name_en}</div>
+                                                        {p.stock < 10 && <span style={{ fontSize: '0.6rem', background: '#fee2e2', color: '#ef4444', padding: '2px 6px', borderRadius: 4, fontWeight: 800, marginTop: 4, display: 'inline-block' }}>LOW STOCK</span>}
+                                                    </td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-500)' }}>{p.name_hi}</td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-600)' }}>{p.category}</td>
                                                     <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price}</td>
@@ -395,10 +431,10 @@ export default function AdminPage() {
                 {tab === 'orders' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
                         <h2 style={{ fontSize: '1.125rem', marginBottom: '1.25rem' }}>All Orders</h2>
-                        {orders.length === 0 ? (
+                        {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed var(--gray-200)', borderRadius: 16, color: 'var(--gray-400)' }}>
                                 <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                                <p>No orders yet.</p>
+                                <p>{searchQuery ? 'No orders match your search.' : 'No orders yet.'}</p>
                             </div>
                         ) : (
                             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-100)', overflow: 'hidden' }}>
@@ -406,13 +442,13 @@ export default function AdminPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
                                         <thead>
                                             <tr style={{ background: 'var(--gray-50)' }}>
-                                                {['Order ID', 'Customer', 'Vendor', 'Amount', 'Status', 'Payment', 'Date'].map(h => (
+                                                {['Order ID', 'Customer', 'Vendor', 'Items', 'Amount', 'Status', 'Payment', 'Date'].map(h => (
                                                     <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-100)', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {orders.map(o => (
+                                            {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).map(o => (
                                                 <tr key={o._id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                                                     <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem' }}>{o.order_id?.slice(-8) || o._id.slice(-8)}</td>
                                                     <td style={{ padding: '1rem' }}>
@@ -420,6 +456,7 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>{o.user_id?.phone || ''}</div>
                                                     </td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-600)', fontSize: '0.8125rem' }}>{o.vendor_id?.store_name || '—'}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--gray-500)', fontSize: '0.8125rem' }}>{o.products?.length || 0} SKU</td>
                                                     <td style={{ padding: '1rem', fontWeight: 700 }}>₹{o.total_amount}</td>
                                                     <td style={{ padding: '1rem' }}>
                                                         <select value={o.status} onChange={e => updateOrder(o._id, { status: e.target.value })}
@@ -427,7 +464,12 @@ export default function AdminPage() {
                                                             {ORDER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                                                         </select>
                                                     </td>
-                                                    <td style={{ padding: '1rem' }}><Badge status={o.payment_status || 'Pending'} /></td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <select value={o.payment_status} onChange={e => updateOrder(o._id, { payment_status: e.target.value })}
+                                                            style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', border: '1.5px solid var(--gray-200)', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none', color: o.payment_status === 'Paid' ? '#16a34a' : '#dc2626' }}>
+                                                            {PAYMENT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                        </select>
+                                                    </td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-400)', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
                                                 </tr>
                                             ))}
@@ -440,9 +482,9 @@ export default function AdminPage() {
                 )}
             </div>
 
-            {/* ── MODAL: Add Vendor ── */}
+            {/* ── MODAL: Add Agency ── */}
             {modal === 'vendor' && (
-                <Modal title="Add New Vendor" onClose={() => setModal(null)}>
+                <Modal title="Add New Agency" onClose={() => setModal(null)}>
                     {err && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#ef4444', fontSize: '0.875rem' }}>{err}</div>}
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
@@ -470,7 +512,7 @@ export default function AdminPage() {
                             </div>
                         </FI>
                         <button onClick={addVendor} disabled={saving} style={{ padding: '0.75rem', background: 'var(--gray-900)', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-                            {saving ? 'Creating...' : 'Create Vendor Account'}
+                            {saving ? 'Creating...' : 'Create Agency Account'}
                         </button>
                     </div>
                 </Modal>
@@ -487,14 +529,18 @@ export default function AdminPage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
                             <FI label="Category"><Select value={pForm.category} onChange={(e: any) => setPForm(p => ({ ...p, category: e.target.value }))} options={CATEGORIES} /></FI>
-                            <FI label="Assign Vendor">
+                            <FI label="Assign Agency">
                                 <Select value={pForm.vendor_id} onChange={(e: any) => setPForm(p => ({ ...p, vendor_id: e.target.value }))}
-                                    options={[{ value: '', label: '— No vendor —' }, ...vendors.map(v => ({ value: v._id, label: v.store_name }))]} />
+                                    options={[{ value: '', label: '— No agency —' }, ...vendors.map(v => ({ value: v._id, label: v.store_name }))]} />
                             </FI>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
                             <FI label="Price (₹)"><Input type="number" placeholder="0" min="0" value={pForm.price} onChange={(e: any) => setPForm(p => ({ ...p, price: e.target.value }))} /></FI>
                             <FI label="Stock Quantity"><Input type="number" placeholder="0" min="0" value={pForm.stock} onChange={(e: any) => setPForm(p => ({ ...p, stock: e.target.value }))} /></FI>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                            <FI label="Unit"><Select value={pForm.unit} onChange={(e: any) => setPForm(p => ({ ...p, unit: e.target.value }))} options={UNITS} /></FI>
+                            <FI label="Min Qty"><Input type="number" min="1" value={pForm.min_qty} onChange={(e: any) => setPForm(p => ({ ...p, min_qty: e.target.value }))} /></FI>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
                             <FI label="Status"><Select value={pForm.status} onChange={(e: any) => setPForm(p => ({ ...p, status: e.target.value }))} options={['In Stock', 'Out of Stock']} /></FI>

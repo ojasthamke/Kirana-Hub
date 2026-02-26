@@ -7,7 +7,7 @@ import { Phone, Lock, ChevronRight, Store, ShieldCheck, User } from 'lucide-reac
 
 const ROLES = [
     { id: 'user', label: 'Shop Owner', icon: <User size={20} /> },
-    { id: 'vendor', label: 'Vendor', icon: <Store size={20} /> },
+    { id: 'vendor', label: 'Agency', icon: <Store size={20} /> },
     { id: 'admin', label: 'Admin', icon: <ShieldCheck size={20} /> },
 ];
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
             const data = await res.json();
             if (data.success) {
                 if (role === 'admin') router.push('/admin');
-                else if (role === 'vendor') router.push('/vendor');
+                else if (role === 'vendor') router.push('/agency');
                 else router.push('/');
                 router.refresh();
             } else {
@@ -133,7 +133,7 @@ export default function LoginPage() {
                     {role !== 'admin' && (
                         <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--gray-100)', textAlign: 'center', fontSize: '0.875rem', color: 'var(--gray-500)' }}>
                             {role === 'vendor'
-                                ? <><span>New vendor? Contact </span><strong style={{ color: 'var(--gray-900)' }}>admin to get access</strong></>
+                                ? <><span>New Agency? Contact </span><strong style={{ color: 'var(--gray-900)' }}>admin to get access</strong></>
                                 : <><span>New here? </span><Link href="/register/user" style={{ fontWeight: 600, color: 'var(--gray-900)' }}>Create account</Link></>
                             }
                         </div>

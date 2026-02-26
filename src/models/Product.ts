@@ -6,6 +6,8 @@ const ProductSchema = new mongoose.Schema({
     name_en: { type: String, required: true },
     name_hi: { type: String, required: true },
     price: { type: Number, required: true },
+    unit: { type: String, enum: ['kg', 'g', 'pcs', 'pack', 'liter', 'ml'], default: 'kg' },
+    min_qty: { type: Number, default: 1 },
     stock: { type: Number, required: true, default: 0 },
     offer: { type: String, default: '' },
     status: { type: String, enum: ['In Stock', 'Out of Stock'], default: 'In Stock' },

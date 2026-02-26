@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 interface Product {
     _id: string; name_en: string; name_hi: string;
     category: string; price: number; stock: number;
+    unit: string; min_qty: number;
     offer?: string; status: 'In Stock' | 'Out of Stock';
     vendor_id?: { _id: string; store_name: string };
 }
@@ -57,10 +58,10 @@ function CardMenu({ product, qty, onAdd, onRemove }: {
 
                         <div style={{ height: 1, background: '#f1f5f9', margin: '0.25rem 0' }} />
 
-                        {/* Option 3: Vendor Info */}
+                        {/* Agency Info */}
                         <div style={{ padding: '0.625rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.8125rem', color: '#64748b' }}>
                             <Store size={14} color="#94a3b8" />
-                            <span>{product.vendor_id?.store_name || 'Verified Store'}</span>
+                            <span>Agency: {product.vendor_id?.store_name || 'Verified Agency'}</span>
                         </div>
 
                         {/* Option: Offer / Price info */}
@@ -131,7 +132,7 @@ export default function Home() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Leaf size={14} color="#4ade80" />
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                                Wholesale • Direct from Vendors
+                                Wholesale • Direct from Agencies
                             </span>
                         </div>
 
@@ -139,9 +140,6 @@ export default function Home() {
                             <h1 style={{ fontSize: 'clamp(1.625rem, 5vw, 2.75rem)', fontWeight: 900, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#fff', lineHeight: 1.1, marginBottom: '0.75rem' }}>
                                 India's Smartest<br />Kirana Marketplace
                             </h1>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(0.875rem,2vw,1rem)', marginBottom: '1.25rem' }}>
-                                Order from multiple vendors. Best wholesale rates.
-                            </p>
                         </div>
 
                         {/* Search */}
@@ -152,16 +150,6 @@ export default function Home() {
                                 value={search} onChange={e => setSearch(e.target.value)}
                                 style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.9375rem', width: '100%' }}
                             />
-                        </div>
-
-                        {/* Stats row — horizontal scroll on mobile */}
-                        <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                            {[{ v: '50+', l: 'Vendors' }, { v: '2,000+', l: 'Products' }, { v: '15K+', l: 'Orders' }].map((s, i) => (
-                                <div key={i} style={{ flexShrink: 0, padding: '0.625rem 1rem', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', minWidth: 90, textAlign: 'center' }}>
-                                    <div style={{ fontSize: '1.125rem', fontWeight: 800, fontFamily: 'Outfit,sans-serif', lineHeight: 1.2 }}>{s.v}</div>
-                                    <div style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{s.l}</div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </div>
@@ -207,97 +195,128 @@ export default function Home() {
                     </div>
                 )}
 
-                {/* ── PRODUCTS GRID ── */}
-                {!loading && filtered.length > 0 && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
-                        gap: 'clamp(0.75rem, 2vw, 1.25rem)'
-                    }}>
-                        {filtered.map(product => {
-                            const qty = getQty(product._id);
-                            const inStock = product.status === 'In Stock';
-                            const emoji = CAT_ICONS[product.category] || '📦';
+                {/* ── PRODUCTS BY CATEGORY ── */}
+                {!loading && categories.filter(c => c !== 'All' && (filter === 'All' || filter === c)).map(cat => {
+                    const catProducts = filtered.filter(p => p.category === cat);
+                    if (catProducts.length === 0) return null;
 
-                            return (
-                                <div key={product._id} style={{
-                                    background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9',
-                                    overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                                    transition: 'box-shadow 0.2s, transform 0.2s',
-                                    display: 'flex', flexDirection: 'column'
-                                }}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; }}
-                                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
-                                >
-                                    {/* Body */}
-                                    <div style={{ padding: '1.25rem 1rem 1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.375rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#16a34a' }}>{product.category}</span>
-                                                {product.offer && (
-                                                    <span style={{ background: '#2563eb', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.15rem 0.4rem', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                        <Sparkles size={10} /> {product.offer}
-                                                    </span>
+                    return (
+                        <div key={cat} style={{ marginBottom: '3.5rem', position: 'relative' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '2rem', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ height: 1, background: '#e2e8f0', flex: 1 }} />
+                                <h2 style={{ padding: '0 2rem', fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <span>{CAT_ICONS[cat] || '📦'}</span> {cat}
+                                </h2>
+                                <div style={{ height: 1, background: '#e2e8f0', flex: 1 }} />
+                            </div>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                                gap: '1.5rem',
+                                padding: '0.5rem'
+                            }}>
+                                {catProducts.map(product => {
+                                    const qty = getQty(product._id);
+                                    const inStock = product.status === 'In Stock';
+
+                                    return (
+                                        <div key={product._id} style={{
+                                            background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9',
+                                            overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                                            transition: 'all 0.25s',
+                                            display: 'flex', flexDirection: 'column',
+                                            position: 'relative'
+                                        }}
+                                            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; }}
+                                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(0,0,0,0.03)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
+                                        >
+                                            <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a', background: '#f0fdf4', padding: '0.2rem 0.6rem', borderRadius: 99 }}>{product.category}</span>
+                                                        {product.offer && (
+                                                            <span style={{ background: '#2563eb', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                                <Sparkles size={10} /> {product.offer}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <CardMenu product={product} qty={qty} onAdd={() => handleAdd(product)} onRemove={() => updateQuantity(product._id, 0)} />
+                                                </div>
+
+                                                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem', lineHeight: 1.2 }}>{product.name_en}</h3>
+                                                <p style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 600, marginBottom: '1rem' }}>{product.name_hi}</p>
+
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.25rem', marginTop: 'auto' }}>
+                                                    <div>
+                                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
+                                                            <span style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#0f172a' }}>₹{product.price}</span>
+                                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>/ {product.unit}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agency</div>
+                                                        <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#475569' }}>{product.vendor_id?.store_name || 'Verified'}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+                                                    <Package size={14} color="#94a3b8" />
+                                                    <span>Min. Order Qty: <strong style={{ color: '#0f172a' }}>{product.min_qty} {product.unit}</strong></span>
+                                                </div>
+
+                                                {inStock ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #f1f5f9', borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
+                                                            <button onClick={() => handleUpdate(product, qty - 1)} disabled={qty <= 0}
+                                                                style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: qty <= 0 ? 'not-allowed' : 'pointer', color: qty <= 0 ? '#cbd5e1' : '#0f172a', transition: 'all 0.2s' }}>−</button>
+                                                            <input type="number" value={qty} onChange={e => handleUpdate(product, parseInt(e.target.value) || 0)}
+                                                                style={{ flex: 1, border: 'none', textAlign: 'center', fontSize: '1rem', fontWeight: 800, outline: 'none', padding: '0', background: 'transparent', minWidth: 0, color: '#0f172a' }} />
+                                                            <button onClick={() => {
+                                                                const nextQty = qty === 0 ? product.min_qty : qty + 1;
+                                                                handleUpdate(product, nextQty);
+                                                            }}
+                                                                style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: 'pointer', color: '#0f172a', transition: 'all 0.2s' }}>+</button>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleAdd(product)}
+                                                            style={{
+                                                                width: '100%', padding: '0.875rem', borderRadius: 14, border: 'none',
+                                                                background: qty > 0 ? '#16a34a' : '#0f172a',
+                                                                color: '#fff', fontSize: '0.9375rem', fontWeight: 800, cursor: 'pointer',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                                transition: 'all 0.2s',
+                                                                boxShadow: qty > 0 ? '0 4px 12px rgba(22,163,74,0.2)' : '0 4px 12px rgba(15,23,42,0.1)'
+                                                            }}>
+                                                            <ShoppingCart size={18} />
+                                                            {qty > 0 ? `Added (${qty})` : (product.min_qty > 1 ? `Add Min. ${product.min_qty} ${product.unit}` : 'Add to Cart')}
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button disabled style={{ width: '100%', padding: '0.875rem', borderRadius: 14, border: '2px solid #fee2e2', background: '#fff5f5', color: '#dc2626', fontSize: '0.9375rem', fontWeight: 800, cursor: 'not-allowed' }}>
+                                                        Out of Stock
+                                                    </button>
                                                 )}
                                             </div>
-                                            {/* 3-DOT MENU */}
-                                            <CardMenu product={product} qty={qty} onAdd={() => handleAdd(product)} onRemove={() => updateQuantity(product._id, 0)} />
                                         </div>
-
-                                        <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.125rem', lineHeight: 1.3 }}>{product.name_en}</h3>
-                                        <p style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.75rem' }}>{product.name_hi}</p>
-
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem', marginTop: 'auto' }}>
-                                            <div>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.03em', color: '#0f172a' }}>₹{product.price}</div>
-                                                <div style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>per unit</div>
-                                            </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Vendor</div>
-                                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>{product.vendor_id?.store_name || 'Verified'}</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Add to cart */}
-                                        {inStock ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
-                                                    <button onClick={() => handleUpdate(product, qty - 1)} disabled={qty <= 0}
-                                                        style={{ width: 40, height: 40, border: 'none', background: 'transparent', fontSize: '1.125rem', fontWeight: 700, cursor: qty <= 0 ? 'not-allowed' : 'pointer', color: qty <= 0 ? '#cbd5e1' : '#0f172a', flexShrink: 0 }}>−</button>
-                                                    <input type="number" value={qty} onChange={e => handleUpdate(product, parseInt(e.target.value) || 0)}
-                                                        style={{ flex: 1, border: 'none', textAlign: 'center', fontSize: '0.9375rem', fontWeight: 700, outline: 'none', padding: '0', background: 'transparent', minWidth: 0 }} />
-                                                    <button onClick={() => handleUpdate(product, qty + 1)}
-                                                        style={{ width: 40, height: 40, border: 'none', background: 'transparent', fontSize: '1.125rem', fontWeight: 700, cursor: 'pointer', color: '#0f172a', flexShrink: 0 }}>+</button>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleAdd(product)}
-                                                    style={{
-                                                        width: '100%', padding: '0.625rem', borderRadius: 10, border: 'none',
-                                                        background: qty > 0 ? '#16a34a' : '#0f172a',
-                                                        color: '#fff', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
-                                                        transition: 'background 0.15s'
-                                                    }}>
-                                                    <ShoppingCart size={15} />
-                                                    {qty > 0 ? `Added (${qty})` : 'Add to Cart'}
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button disabled style={{ width: '100%', padding: '0.625rem', borderRadius: 10, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#dc2626', fontSize: '0.875rem', fontWeight: 700, cursor: 'not-allowed' }}>
-                                                Out of Stock
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                    );
+                                })}
+                            </div>
+                            {/* Section Separator */}
+                            <div style={{ height: '3rem', borderBottom: '1px solid #e2e8f0', marginTop: '1rem', boxShadow: '0 20px 20px -20px rgba(0,0,0,0.06)', margin: '0 2rem' }} />
+                        </div>
+                    );
+                })}
             </div>
             <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         ::-webkit-scrollbar { display: none; }
         * { box-sizing: border-box; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
         @media (max-width: 480px) {
           input[type=number] { font-size: 1rem !important; }
         }
