@@ -91,24 +91,35 @@ export default function Home() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const loadProducts = () => {
         fetch('/api/products')
             .then(r => r.json())
             .then(d => { if (Array.isArray(d)) setProducts(d); setLoading(false); })
             .catch(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        loadProducts();
+        // Auto-refresh every 30 seconds so changes from admin/agency appear live
+        const interval = setInterval(loadProducts, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     const getQty = (id: string) => cart.find(i => i.productId === id)?.quantity || 0;
 
     const handleAdd = (p: Product) => {
         const qty = getQty(p._id);
-        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: qty + 1, vendorId: p.vendor_id?._id || '' });
+        // Enforce min_qty on first add
+        const nextQty = qty === 0 ? p.min_qty : qty + p.min_qty;
+        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: qty === 0 ? p.min_qty : qty + 1, vendorId: p.vendor_id?._id || '' });
     };
 
     const handleUpdate = (p: Product, newQty: number) => {
         if (newQty < 0) return;
         if (newQty === 0) { updateQuantity(p._id, 0); return; }
-        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: newQty, vendorId: p.vendor_id?._id || '' });
+        // Enforce minimum qty
+        const safeQty = newQty < p.min_qty ? p.min_qty : newQty;
+        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: safeQty, vendorId: p.vendor_id?._id || '' });
     };
 
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
@@ -247,37 +258,42 @@ export default function Home() {
                                                 <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem', lineHeight: 1.2 }}>{product.name_en}</h3>
                                                 <p style={{ fontSize: '0.8125rem', color: '#94a3b8', fontWeight: 600, marginBottom: '1rem' }}>{product.name_hi}</p>
 
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.25rem', marginTop: 'auto' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem', marginTop: 'auto' }}>
                                                     <div>
+                                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Unit Price</div>
                                                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
-                                                            <span style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#0f172a' }}>₹{product.price}</span>
-                                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>/ {product.unit}</span>
+                                                            <span style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#0f172a' }}>₹{product.price}</span>
+                                                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>/ {product.unit}</span>
                                                         </div>
                                                     </div>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agency</div>
+                                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Agency</div>
                                                         <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#475569' }}>{product.vendor_id?.store_name || 'Verified'}</div>
                                                     </div>
                                                 </div>
 
-                                                <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
-                                                    <Package size={14} color="#94a3b8" />
-                                                    <span>Min. Order Qty: <strong style={{ color: '#0f172a' }}>{product.min_qty} {product.unit}</strong></span>
-                                                </div>
+                                                {/* Min Order Total Banner */}
+                                                {product.min_qty > 1 && (
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0.875rem', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', borderRadius: 10, marginBottom: '0.875rem', border: '1px solid #bbf7d0' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <Package size={13} color="#16a34a" />
+                                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#15803d' }}>Min. {product.min_qty} {product.unit}</span>
+                                                        </div>
+                                                        <span style={{ fontSize: '0.875rem', fontWeight: 900, color: '#14532d' }}>₹{(product.price * product.min_qty).toLocaleString()}</span>
+                                                    </div>
+                                                )}
 
                                                 {inStock ? (
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #f1f5f9', borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
-                                                            <button onClick={() => handleUpdate(product, qty - 1)} disabled={qty <= 0}
-                                                                style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: qty <= 0 ? 'not-allowed' : 'pointer', color: qty <= 0 ? '#cbd5e1' : '#0f172a', transition: 'all 0.2s' }}>−</button>
-                                                            <input type="number" value={qty} onChange={e => handleUpdate(product, parseInt(e.target.value) || 0)}
-                                                                style={{ flex: 1, border: 'none', textAlign: 'center', fontSize: '1rem', fontWeight: 800, outline: 'none', padding: '0', background: 'transparent', minWidth: 0, color: '#0f172a' }} />
-                                                            <button onClick={() => {
-                                                                const nextQty = qty === 0 ? product.min_qty : qty + 1;
-                                                                handleUpdate(product, nextQty);
-                                                            }}
-                                                                style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: 'pointer', color: '#0f172a', transition: 'all 0.2s' }}>+</button>
-                                                        </div>
+                                                        {qty > 0 && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', border: '2px solid #f1f5f9', borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
+                                                                <button onClick={() => handleUpdate(product, qty - 1)} disabled={qty <= product.min_qty}
+                                                                    style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: qty <= product.min_qty ? 'not-allowed' : 'pointer', color: qty <= product.min_qty ? '#cbd5e1' : '#0f172a', transition: 'all 0.2s' }}>−</button>
+                                                                <span style={{ flex: 1, textAlign: 'center', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>{qty}</span>
+                                                                <button onClick={() => handleUpdate(product, qty + 1)}
+                                                                    style={{ width: 44, height: 44, border: 'none', background: 'transparent', fontSize: '1.25rem', fontWeight: 700, cursor: 'pointer', color: '#0f172a', transition: 'all 0.2s' }}>+</button>
+                                                            </div>
+                                                        )}
                                                         <button
                                                             onClick={() => handleAdd(product)}
                                                             style={{
@@ -289,7 +305,7 @@ export default function Home() {
                                                                 boxShadow: qty > 0 ? '0 4px 12px rgba(22,163,74,0.2)' : '0 4px 12px rgba(15,23,42,0.1)'
                                                             }}>
                                                             <ShoppingCart size={18} />
-                                                            {qty > 0 ? `Added (${qty})` : (product.min_qty > 1 ? `Add Min. ${product.min_qty} ${product.unit}` : 'Add to Cart')}
+                                                            {qty > 0 ? `In Cart: ${qty} ${product.unit} · ₹${(product.price * qty).toLocaleString()}` : `Add Min. ${product.min_qty} ${product.unit} (₹${(product.price * product.min_qty).toLocaleString()})`}
                                                         </button>
                                                     </div>
                                                 ) : (

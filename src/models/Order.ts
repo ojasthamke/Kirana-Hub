@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const OrderSchema = new mongoose.Schema({
-    order_id: { type: String, unique: true }, // Generated readable ID
-    master_order_id: { type: String, required: true }, // For user grouping
+    order_id: { type: String, unique: true },
+    master_order_id: { type: String, required: true },
     vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     products: [{
@@ -20,6 +20,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'Pending'
     },
     payment_status: { type: String, enum: ['Unpaid', 'Paid', 'Pending Approval'], default: 'Unpaid' },
+    payment_method: { type: String, enum: ['Cash', 'Online'], default: 'Cash' },
     created_at: { type: Date, default: Date.now },
 }, { timestamps: true });
 

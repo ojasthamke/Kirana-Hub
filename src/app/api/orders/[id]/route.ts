@@ -9,14 +9,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        const { status } = await req.json();
+        const body = await req.json();
+        const { status, payment_status } = body;
         await dbConnect();
 
         const orderId = params.id;
         const oldOrder = await Order.findById(orderId);
         if (!oldOrder) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-        const newOrder = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+        const updateData: any = {};
+        if (status !== undefined) updateData.status = status;
+        if (payment_status !== undefined) updateData.payment_status = payment_status;
+
+        const newOrder = await Order.findByIdAndUpdate(orderId, updateData, { new: true });
 
         // Update Wallet stats if status changed to Delivered
         if (status === 'Delivered' && oldOrder.status !== 'Delivered') {

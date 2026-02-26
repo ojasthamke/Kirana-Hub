@@ -9,25 +9,23 @@ export async function POST(req: Request) {
     try {
         const session = getAuthSession();
         if (!session || session.role !== 'user') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json({ error: 'Please login as a Shop Owner to place orders.' }, { status: 401 });
         }
 
-        const { cartItems } = await req.json(); // Array of { productId, quantity }
+        const { cartItems, payment_method } = await req.json();
         await dbConnect();
 
-        // 1. Fetch products and group by vendor
         const productIds = cartItems.map((item: any) => item.productId);
         const dbProducts = await Product.find({ _id: { $in: productIds } });
 
         const vendorBatches: Record<string, any[]> = {};
         const masterOrderId = `MST-${Date.now()}`;
-
         let masterTotal = 0;
 
         for (const item of cartItems) {
             const dbProduct = dbProducts.find(p => p._id.toString() === item.productId);
             if (!dbProduct || dbProduct.stock < item.quantity) {
-                throw new Error(`Product ${dbProduct?.name_en || item.productId} out of stock`);
+                throw new Error(`Product "${dbProduct?.name_en || item.productId}" is out of stock or has insufficient quantity.`);
             }
 
             const vendorId = dbProduct.vendor_id.toString();
@@ -45,13 +43,11 @@ export async function POST(req: Request) {
                 total: lineTotal
             });
 
-            // Update Stock (Real-time)
             dbProduct.stock -= item.quantity;
             if (dbProduct.stock === 0) dbProduct.status = 'Out of Stock';
             await dbProduct.save();
         }
 
-        // 2. Create Vendor Orders
         const orders = [];
         for (const [vendorId, products] of Object.entries(vendorBatches)) {
             const vendorTotal = products.reduce((acc, p) => acc + p.total, 0);
@@ -65,10 +61,10 @@ export async function POST(req: Request) {
                 products: products,
                 total_amount: vendorTotal,
                 status: 'Pending',
-                payment_status: 'Unpaid'
+                payment_status: 'Unpaid',
+                payment_method: payment_method || 'Cash',
             });
 
-            // 3. Update Vendor Wallet
             await VendorWallet.findOneAndUpdate(
                 { vendor_id: vendorId },
                 { $inc: { total_orders: 1 } },

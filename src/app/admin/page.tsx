@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
     Users, Box, ShoppingBag, TrendingUp, ShieldCheck,
     Plus, Edit2, Trash2, CheckCircle, XCircle, X,
-    Eye, EyeOff, DollarSign, Package, AlertCircle, RefreshCw, Search
+    Eye, EyeOff, DollarSign, Package, AlertCircle, RefreshCw, Search, Banknote, CreditCard
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -94,6 +94,8 @@ export default function AdminPage() {
 
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState('');
+    const [customCat, setCustomCat] = useState('');
+    const [catList, setCatList] = useState(CATEGORIES);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -127,7 +129,12 @@ export default function AdminPage() {
         setLoading(false);
     }, [router]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        load();
+        // Auto-refresh every 20 seconds
+        const interval = setInterval(load, 20000);
+        return () => clearInterval(interval);
+    }, [load]);
 
     /* ── Vendor actions ── */
     const addVendor = async () => {
@@ -442,7 +449,7 @@ export default function AdminPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
                                         <thead>
                                             <tr style={{ background: 'var(--gray-50)' }}>
-                                                {['Order ID', 'Customer', 'Vendor', 'Items', 'Amount', 'Status', 'Payment', 'Date'].map(h => (
+                                                {['Order ID', 'Customer', 'Agency', 'Items', 'Amount', 'Pay Method', 'Status', 'Payment', 'Date'].map(h => (
                                                     <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-100)', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -458,6 +465,12 @@ export default function AdminPage() {
                                                     <td style={{ padding: '1rem', color: 'var(--gray-600)', fontSize: '0.8125rem' }}>{o.vendor_id?.store_name || '—'}</td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-500)', fontSize: '0.8125rem' }}>{o.products?.length || 0} SKU</td>
                                                     <td style={{ padding: '1rem', fontWeight: 700 }}>₹{o.total_amount}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        {(o as any).payment_method === 'Online'
+                                                            ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#2563eb', fontWeight: 700, fontSize: '0.8rem' }}><CreditCard size={13} /> Online</span>
+                                                            : <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#d97706', fontWeight: 700, fontSize: '0.8rem' }}><Banknote size={13} /> Cash</span>
+                                                        }
+                                                    </td>
                                                     <td style={{ padding: '1rem' }}>
                                                         <select value={o.status} onChange={e => updateOrder(o._id, { status: e.target.value })}
                                                             style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', border: '1.5px solid var(--gray-200)', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none' }}>
@@ -528,7 +541,18 @@ export default function AdminPage() {
                             <FI label="Product Name (Hindi)"><Input placeholder="e.g. तूर दाल" value={pForm.name_hi} onChange={(e: any) => setPForm(p => ({ ...p, name_hi: e.target.value }))} /></FI>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
-                            <FI label="Category"><Select value={pForm.category} onChange={(e: any) => setPForm(p => ({ ...p, category: e.target.value }))} options={CATEGORIES} /></FI>
+                            <FI label="Category">
+                                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                                    <Select value={pForm.category} onChange={(e: any) => setPForm(p => ({ ...p, category: e.target.value }))} options={catList} />
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input value={customCat} onChange={(e: any) => setCustomCat(e.target.value)}
+                                            placeholder="Or type a custom category..."
+                                            onKeyDown={(e: any) => { if (e.key === 'Enter') { e.preventDefault(); if (customCat.trim() && !catList.includes(customCat.trim())) { const updated = [...catList, customCat.trim()]; setCatList(updated); } setPForm((p: any) => ({ ...p, category: customCat.trim() })); setCustomCat(''); } }}
+                                            style={{ flex: 1, padding: '0.4rem 0.75rem', border: '1.5px solid var(--gray-200)', borderRadius: 8, fontSize: '0.85rem', outline: 'none' }} />
+                                        <button type="button" onClick={() => { if (customCat.trim() && !catList.includes(customCat.trim())) { const updated = [...catList, customCat.trim()]; setCatList(updated); } if (customCat.trim()) { setPForm((p: any) => ({ ...p, category: customCat.trim() })); setCustomCat(''); } }} style={{ padding: '0.4rem 0.875rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                                    </div>
+                                </div>
+                            </FI>
                             <FI label="Assign Agency">
                                 <Select value={pForm.vendor_id} onChange={(e: any) => setPForm(p => ({ ...p, vendor_id: e.target.value }))}
                                     options={[{ value: '', label: '— No agency —' }, ...vendors.map(v => ({ value: v._id, label: v.store_name }))]} />

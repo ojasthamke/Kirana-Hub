@@ -1,27 +1,87 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingBag, Trash2, ChevronRight, CheckCircle, Package, ShoppingCart } from 'lucide-react';
+import { ShoppingBag, Trash2, ChevronRight, CheckCircle, Package, ShoppingCart, CreditCard, Banknote, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 
+function PaymentModal({ total, onConfirm, onClose }: { total: number; onConfirm: (method: 'Cash' | 'Online') => void; onClose: () => void }) {
+    const [method, setMethod] = useState<'Cash' | 'Online'>('Cash');
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+            <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, padding: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>Choose Payment Method</h2>
+                    <button onClick={onClose} style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={16} /></button>
+                </div>
+
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    Order Total: <strong style={{ color: '#0f172a', fontSize: '1.1rem' }}>₹{total.toLocaleString()}</strong>
+                </p>
+
+                <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                    {[
+                        { id: 'Cash', label: 'Pay on Delivery (Cash)', sub: 'Pay when the order arrives', icon: <Banknote size={24} color="#16a34a" /> },
+                        { id: 'Online', label: 'Online Payment', sub: 'UPI, Card, Net Banking', icon: <CreditCard size={24} color="#2563eb" /> },
+                    ].map(opt => (
+                        <button key={opt.id} onClick={() => setMethod(opt.id as any)} style={{
+                            display: 'flex', alignItems: 'center', gap: '1rem',
+                            padding: '1rem 1.25rem', borderRadius: 16,
+                            border: `2px solid ${method === opt.id ? (opt.id === 'Cash' ? '#16a34a' : '#2563eb') : '#f1f5f9'}`,
+                            background: method === opt.id ? (opt.id === 'Cash' ? '#f0fdf4' : '#eff6ff') : '#f8fafc',
+                            cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s'
+                        }}>
+                            <div style={{ width: 48, height: 48, borderRadius: 12, background: method === opt.id ? '#fff' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {opt.icon}
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#0f172a' }}>{opt.label}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 2 }}>{opt.sub}</div>
+                            </div>
+                            {method === opt.id && <div style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: '50%', background: opt.id === 'Cash' ? '#16a34a' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <CheckCircle size={14} color="#fff" />
+                            </div>}
+                        </button>
+                    ))}
+                </div>
+
+                <button onClick={() => onConfirm(method)} style={{
+                    width: '100%', padding: '0.9rem', borderRadius: 14, border: 'none',
+                    background: 'linear-gradient(135deg, #0f172a, #1e3a2f)',
+                    color: '#fff', fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                }}>
+                    Confirm & Place Order <ChevronRight size={18} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function CartPage() {
     const { cart, updateQuantity, clearCart, totalPrice } = useCart();
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [checkingOut, setCheckingOut] = useState(false);
     const [orderId, setOrderId] = useState<string | null>(null);
+    const [error, setError] = useState('');
 
-    const handleCheckout = async () => {
+    const handleCheckout = async (paymentMethod: 'Cash' | 'Online') => {
+        setShowPaymentModal(false);
         setCheckingOut(true);
+        setError('');
         try {
             const res = await fetch('/api/orders/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cartItems: cart.map(i => ({ productId: i.productId, quantity: i.quantity })) })
+                body: JSON.stringify({
+                    cartItems: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
+                    payment_method: paymentMethod
+                })
             });
             const data = await res.json();
             if (data.success) { setOrderId(data.masterOrderId); clearCart(); }
-            else alert(data.error || 'Please login first.');
-        } catch { alert('Please login to checkout.'); }
+            else setError(data.error || 'Failed to place order. Please try again.');
+        } catch { setError('Please login to checkout.'); }
         finally { setCheckingOut(false); }
     };
 
@@ -45,7 +105,7 @@ export default function CartPage() {
                 <div className="page-header">
                     <div>
                         <h1>Shopping Cart</h1>
-                        <p>{cart.length > 0 ? `${cart.reduce((a, i) => a + i.quantity, 0)} items from multiple vendors` : 'Your cart is empty'}</p>
+                        <p>{cart.length > 0 ? `${cart.reduce((a, i) => a + i.quantity, 0)} items ready for checkout` : 'Your cart is empty'}</p>
                     </div>
                     {cart.length > 0 && (
                         <button className="btn btn-ghost btn-sm" onClick={clearCart}>
@@ -53,6 +113,12 @@ export default function CartPage() {
                         </button>
                     )}
                 </div>
+
+                {error && (
+                    <div style={{ background: '#fee2e2', color: '#dc2626', padding: '0.875rem 1rem', borderRadius: 10, marginBottom: '1rem', fontSize: '0.875rem', fontWeight: 600, border: '1px solid #fecaca' }}>
+                        ⚠️ {error}
+                    </div>
+                )}
 
                 {cart.length === 0 ? (
                     <div className="empty-state">
@@ -79,7 +145,7 @@ export default function CartPage() {
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontWeight: 700, color: 'var(--gray-900)', fontSize: '0.9375rem', marginBottom: '0.125rem' }} className="truncate">{item.name}</div>
-                                        <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>₹{item.price} × {item.quantity}</div>
+                                        <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>₹{item.price} × {item.quantity} = <strong style={{ color: '#0f172a' }}>₹{item.price * item.quantity}</strong></div>
                                     </div>
                                     <div className="qty-stepper">
                                         <button className="qty-btn" onClick={() => updateQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 0}>−</button>
@@ -106,17 +172,34 @@ export default function CartPage() {
                                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '1.5rem', letterSpacing: '-0.04em' }}>₹{totalPrice}</span>
                                 </div>
                             </div>
-                            <button className="btn btn-primary btn-lg w-full" onClick={handleCheckout} disabled={checkingOut}>
-                                {checkingOut ? 'Placing Order...' : 'Place Wholesale Order'}
+                            <button
+                                className="btn btn-primary btn-lg w-full"
+                                onClick={() => setShowPaymentModal(true)}
+                                disabled={checkingOut}
+                                style={{
+                                    background: checkingOut ? '#94a3b8' : 'linear-gradient(135deg, #0f172a, #1e3a2f)',
+                                    border: 'none'
+                                }}
+                            >
+                                {checkingOut ? 'Placing Order...' : 'Choose Payment & Order'}
                                 {!checkingOut && <ChevronRight size={18} />}
                             </button>
                             <p style={{ marginTop: '0.875rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--gray-400)' }}>
-                                Orders auto-split vendor-wise
+                                Orders auto-split agency-wise
                             </p>
                         </div>
                     </div>
                 )}
             </div>
+
+            {showPaymentModal && (
+                <PaymentModal
+                    total={totalPrice}
+                    onConfirm={handleCheckout}
+                    onClose={() => setShowPaymentModal(false)}
+                />
+            )}
+
             <style jsx>{`
                 @media (max-width: 1024px) {
                     .cart-grid {
