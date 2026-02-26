@@ -13,7 +13,11 @@ export async function GET(req: Request) {
         if (session.role === 'user') query.user_id = session.id;
         if (session.role === 'vendor') query.vendor_id = session.id;
 
-        const orders = await Order.find(query).sort({ createdAt: -1 });
+        const orders = await Order.find(query)
+            .populate('user_id', 'name phone address') // Full buyer details for vendor
+            .populate('vendor_id', 'store_name phone')
+            .sort({ createdAt: -1 });
+
         return NextResponse.json(orders);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

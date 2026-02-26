@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw } from 'lucide-react';
 
-interface Order { _id: string; order_id: string; total_amount: number; status: string; createdAt: string; products: any[]; }
+interface Order { _id: string; order_id: string; total_amount: number; status: string; createdAt: string; products: any[]; user_id?: { name: string; phone: string; address: string } | null; }
 interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; status: string; offer?: string; }
 interface Wallet { totalRevenue: number; pendingAmount: number; totalPaid: number; orderCount: number; }
 
@@ -201,9 +201,9 @@ export default function VendorPage() {
             ) : (
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 550 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
                     <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Order ID', 'Items', 'Amount', 'Update Status', 'Date'].map(h => (
+                      {['Order ID', 'Customer', 'Phone', 'Address', 'Amount', 'Status', 'Date'].map(h => (
                         <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
@@ -211,8 +211,14 @@ export default function VendorPage() {
                       {orders.map(o => (
                         <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem' }}>#{o.order_id?.slice(-6) || o._id.slice(-6)}</td>
-                          <td style={{ padding: '1rem', color: '#475569' }}>{o.products?.length || 0} item(s)</td>
-                          <td style={{ padding: '1rem', fontWeight: 700 }}>₹{o.total_amount}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.875rem' }}>{o.user_id?.name || '—'}</div>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <a href={`tel:${o.user_id?.phone}`} style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.875rem', textDecoration: 'none' }}>{o.user_id?.phone || '—'}</a>
+                          </td>
+                          <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8125rem', maxWidth: 160 }}>{o.user_id?.address || '—'}</td>
+                          <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>₹{o.total_amount}</td>
                           <td style={{ padding: '1rem' }}>
                             <select value={o.status} onChange={e => updateOrder(o._id, e.target.value)}
                               style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none' }}>
