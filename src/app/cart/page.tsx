@@ -62,16 +62,17 @@ export default function CartPage() {
                         <Link href="/" className="btn btn-primary" style={{ marginTop: '0.5rem' }}>Start Shopping</Link>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '2rem', alignItems: 'start' }}>
+                    <div className="cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '2rem', alignItems: 'start' }}>
                         {/* Items */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {cart.map(item => (
                                 <div key={item.productId} style={{
                                     background: 'var(--white)', border: '1px solid var(--gray-100)',
-                                    borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem',
-                                    display: 'flex', alignItems: 'center', gap: '1rem', transition: 'all 0.2s'
+                                    borderRadius: 'var(--radius-lg)', padding: '1rem',
+                                    display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'all 0.2s',
+                                    flexWrap: 'wrap'
                                 }}
-                                    className="animate-fade-in"
+                                    className="animate-fade-in cart-item"
                                 >
                                     <div style={{ width: 52, height: 52, borderRadius: 'var(--radius-md)', background: 'var(--gray-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         <Package size={24} color="var(--gray-300)" />
@@ -116,6 +117,43 @@ export default function CartPage() {
                     </div>
                 )}
             </div>
+            <style jsx>{`
+                @media (max-width: 1024px) {
+                    .cart-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 1.5rem !important;
+                    }
+                    .sticky-top {
+                        position: static !important;
+                    }
+                }
+                @media (max-width: 600px) {
+                    .cart-item {
+                        display: grid !important;
+                        grid-template-areas: 
+                            "img info info"
+                            "img stepper price";
+                        grid-template-columns: auto 1fr auto;
+                        align-items: center;
+                    }
+                    .cart-item > div:nth-child(1) { grid-area: img; }
+                    .cart-item > div:nth-child(2) { grid-area: info; }
+                    .cart-item > div:nth-child(3) { grid-area: stepper; }
+                    .cart-item > div:nth-child(4) { grid-area: price; margin-top: 0 !important; }
+
+                    .qty-stepper {
+                        height: 32px !important;
+                    }
+                    .qty-btn {
+                        width: 32px !important;
+                        height: 32px !important;
+                    }
+                    .qty-input {
+                        width: 32px !important;
+                        font-size: 0.85rem !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
