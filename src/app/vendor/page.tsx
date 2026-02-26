@@ -32,6 +32,20 @@ const Modal = ({ title, onClose, children }: any) => (
   </div>
 );
 
+const SI = (p: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+    <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b' }}>{p.label}</label>
+    {p.children}
+  </div>
+);
+
+const Inp = (p: any) => <input {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', width: '100%', outline: 'none', boxSizing: 'border-box' }} />;
+const Sel = ({ opts, ...p }: any) => (
+  <select {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', background: '#fff', outline: 'none', width: '100%' }}>
+    {opts.map((o: string) => <option key={o} value={o}>{o}</option>)}
+  </select>
+);
+
 export default function VendorPage() {
   const [tab, setTab] = useState<'overview' | 'orders' | 'products'>('overview');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -102,20 +116,6 @@ export default function VendorPage() {
     setPf({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), status: p.status, offer: p.offer || '' });
     setModal('edit');
   };
-
-  const SI = (p: any) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-      <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b' }}>{p.label}</label>
-      {p.children}
-    </div>
-  );
-
-  const Inp = (p: any) => <input {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', width: '100%', outline: 'none', boxSizing: 'border-box' }} />;
-  const Sel = ({ opts, ...p }: any) => (
-    <select {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', background: '#fff', outline: 'none', width: '100%' }}>
-      {opts.map((o: string) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  );
 
   if (loading) return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>

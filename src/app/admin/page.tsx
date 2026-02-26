@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Users, Box, ShoppingBag, TrendingUp, ShieldCheck,
     Plus, Edit2, Trash2, CheckCircle, XCircle, X,
@@ -69,11 +70,13 @@ const Badge = ({ status }: { status: string }) => {
 
 /* ─── Main Component ──────────────────────────────────────── */
 export default function AdminPage() {
+    const router = useRouter();
     const [tab, setTab] = useState<'overview' | 'vendors' | 'products' | 'orders'>('overview');
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [modal, setModal] = useState<'vendor' | 'product' | 'editVendor' | 'editProduct' | null>(null);
     const [selected, setSelected] = useState<any>(null);
     const [showPw, setShowPw] = useState(false);
@@ -91,17 +94,28 @@ export default function AdminPage() {
 
     const load = useCallback(async () => {
         setLoading(true);
+        setLoadError('');
         try {
             const [vr, pr, or] = await Promise.all([
-                fetch('/api/admin/vendors'), fetch('/api/admin/products'), fetch('/api/admin/orders')
+                fetch('/api/admin/vendors'),
+                fetch('/api/admin/products'),
+                fetch('/api/admin/orders')
             ]);
+            // Check for 401 — session expired or not logged in
+            if (vr.status === 401) {
+                router.push('/login');
+                return;
+            }
             const [vd, pd, od] = await Promise.all([vr.json(), pr.json(), or.json()]);
+            if (vd.error) { setLoadError(vd.error); setLoading(false); return; }
             if (Array.isArray(vd)) setVendors(vd);
             if (Array.isArray(pd)) setProducts(pd);
             if (Array.isArray(od)) setOrders(od);
-        } catch { }
+        } catch (e: any) {
+            setLoadError('Could not connect to database. Check your internet connection.');
+        }
         setLoading(false);
-    }, []);
+    }, [router]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -170,6 +184,19 @@ export default function AdminPage() {
         <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
             <div style={{ width: 40, height: 40, border: '3px solid var(--gray-200)', borderTopColor: 'var(--gray-900)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
             <p style={{ color: 'var(--gray-400)', fontSize: '0.875rem' }}>Loading admin data...</p>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+    );
+
+    if (loadError) return (
+        <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
+            <AlertCircle size={48} color="#ef4444" strokeWidth={1.5} />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Failed to Load Data</h2>
+            <p style={{ color: '#64748b', maxWidth: 400 }}>{loadError}</p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+                <button onClick={load} style={{ padding: '0.625rem 1.5rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Retry</button>
+                <button onClick={() => router.push('/login')} style={{ padding: '0.625rem 1.5rem', background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Re-login</button>
+            </div>
         </div>
     );
 
