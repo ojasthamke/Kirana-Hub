@@ -48,11 +48,22 @@ export default function VendorPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [or, pr, wr] = await Promise.all([fetch('/api/orders'), fetch('/api/vendor/products'), fetch('/api/vendor/wallet')]);
-      const [od, pd, wd] = await Promise.all([or.json(), pr.json(), wr.json()]);
+      const [or, pr, wr] = await Promise.all([
+        fetch('/api/orders').catch(() => null),
+        fetch('/api/vendor/products').catch(() => null),
+        fetch('/api/vendor/wallet').catch(() => null),
+      ]);
+      const [od, pd, wd] = await Promise.all([
+        or?.json().catch(() => []),
+        pr?.json().catch(() => []),
+        wr?.json().catch(() => null),
+      ]);
       if (Array.isArray(od)) setOrders(od);
       if (Array.isArray(pd)) setProducts(pd);
-      if (wd && !wd.error) setWallet(wd);
+      // Safe wallet: handle null, undefined, or error object
+      if (wd && typeof wd === 'object' && !wd.error && 'totalRevenue' in wd) {
+        setWallet(wd);
+      }
     } catch { }
     setLoading(false);
   }, []);

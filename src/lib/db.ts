@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/kirana_marketplace';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error('❌ MONGODB_URI is not defined in .env.local');
 }
 
 let cached = (global as any).mongoose;
@@ -18,15 +18,25 @@ async function dbConnect() {
   }
 
   if (!cached.promise) {
-    const opts = {
+    cached.promise = mongoose.connect(MONGODB_URI!, {
       bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
+      serverSelectionTimeoutMS: 8000,  // Fail fast — 8s timeout
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 20000,
+      family: 4, // Force IPv4 — fixes DNS SRV issues on some networks
+    }).then((m) => m).catch((err) => {
+      cached.promise = null; // Reset so next request retries
+      throw err;
     });
   }
-  cached.conn = await cached.promise;
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.promise = null;
+    throw err;
+  }
+
   return cached.conn;
 }
 
