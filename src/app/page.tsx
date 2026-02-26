@@ -229,25 +229,17 @@ export default function Home() {
                                     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; }}
                                     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
                                 >
-                                    {/* Image area */}
-                                    <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#f8fafc)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
-                                        <span style={{ fontSize: '3.5rem' }}>{emoji}</span>
-                                        {product.offer && (
-                                            <div style={{ position: 'absolute', top: 10, right: 10, background: '#2563eb', color: '#fff', fontSize: '0.625rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 99, letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                <Sparkles size={9} /> {product.offer}
-                                            </div>
-                                        )}
-                                        {!inStock && (
-                                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#dc2626', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Out of Stock</span>
-                                            </div>
-                                        )}
-                                    </div>
-
                                     {/* Body */}
-                                    <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ padding: '1.25rem 1rem 1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.375rem' }}>
-                                            <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#16a34a' }}>{product.category}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#16a34a' }}>{product.category}</span>
+                                                {product.offer && (
+                                                    <span style={{ background: '#2563eb', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.15rem 0.4rem', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                        <Sparkles size={10} /> {product.offer}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {/* 3-DOT MENU */}
                                             <CardMenu product={product} qty={qty} onAdd={() => handleAdd(product)} onRemove={() => updateQuantity(product._id, 0)} />
                                         </div>

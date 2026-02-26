@@ -45,7 +45,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                             <Link href="/" style={{ padding: '0.4rem 0.75rem', borderRadius: 8, fontWeight: 500, fontSize: '0.875rem', color: pathname === '/' ? 'var(--gray-900)' : 'var(--gray-500)', background: pathname === '/' ? 'var(--gray-100)' : 'transparent', textDecoration: 'none' }}>🛍️ Shop</Link>
                             <Link href="/admin" style={{ padding: '0.4rem 0.75rem', borderRadius: 8, fontWeight: 500, fontSize: '0.875rem', color: pathname.startsWith('/admin') ? 'var(--gray-900)' : 'var(--gray-500)', background: pathname.startsWith('/admin') ? 'var(--gray-100)' : 'transparent', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><ShieldCheck size={14} color="var(--accent)" /> Admin</Link>
                             <Link href="/vendor" style={{ padding: '0.4rem 0.75rem', borderRadius: 8, fontWeight: 500, fontSize: '0.875rem', color: pathname.startsWith('/vendor') ? 'var(--gray-900)' : 'var(--gray-500)', background: pathname.startsWith('/vendor') ? 'var(--gray-100)' : 'transparent', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Store size={14} /> Vendor</Link>
-                            <Link href="/cart" style={{ padding: '0.4rem 0.75rem', borderRadius: 8, fontWeight: 500, fontSize: '0.875rem', color: pathname === '/cart' ? 'var(--gray-900)' : 'var(--gray-500)', background: pathname === '/cart' ? 'var(--gray-100)' : 'transparent', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><ShoppingCart size={14} /> Cart{totalItems > 0 && <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: 99, fontSize: '0.6rem', padding: '1px 5px', fontWeight: 800 }}>{totalItems}</span>}</Link>
+                            <Link href="/cart" className="cart-link" style={{ padding: '0.4rem 0.75rem', borderRadius: 8, fontWeight: 500, fontSize: '0.875rem', color: pathname === '/cart' ? 'var(--gray-900)' : 'var(--gray-500)', background: pathname === '/cart' ? 'var(--gray-100)' : 'transparent', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem', position: 'relative' }}><ShoppingCart size={14} /> Cart{totalItems > 0 && <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: 99, fontSize: '0.6rem', padding: '1px 5px', fontWeight: 800, position: 'absolute', top: -7, right: -7 }}>{totalItems}</span>}</Link>
                         </>
                     )}
                     {!IS_LOCAL && session?.role === 'user' && (
@@ -83,11 +83,11 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                             </div>
                             {/* Cart for users */}
                             {session.role === 'user' && (
-                                <Link href="/cart" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.4rem 0.875rem', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-700)', textDecoration: 'none', transition: 'all 0.15s' }}>
+                                <Link href="/cart" className="cart-link" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.4rem 0.875rem', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-700)', textDecoration: 'none', transition: 'all 0.15s' }}>
                                     <ShoppingCart size={16} />
                                     Cart
                                     {totalItems > 0 && (
-                                        <span style={{ position: 'absolute', top: -7, right: -7, width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{totalItems}</span>
+                                        <span className="cart-badge" style={{ position: 'absolute', top: -7, right: -7, width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{totalItems}</span>
                                     )}
                                 </Link>
                             )}
@@ -101,6 +101,22 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
                     )}
                 </div>
             </div>
+            <style>{`
+                @media (max-width: 768px) {
+                    .cart-link {
+                        position: fixed !important;
+                        bottom: 1.5rem !important;
+                        right: 1.5rem !important;
+                        background: #0f172a !important;
+                        color: #fff !important;
+                        padding: 0.85rem 1.25rem !important;
+                        border-radius: 99px !important;
+                        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3) !important;
+                        z-index: 9999 !important;
+                        border: none !important;
+                    }
+                }
+            `}</style>
         </nav>
     );
 }

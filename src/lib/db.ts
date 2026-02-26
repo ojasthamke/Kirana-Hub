@@ -23,6 +23,7 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 8000,  // Fail fast — 8s timeout
       connectTimeoutMS: 10000,
       socketTimeoutMS: 20000,
+      family: 4, // Force IPv4 to bypass NAT64 translation bug on your network
     }).then((m) => m).catch((err) => {
       cached.promise = null; // Reset so next request retries
       throw err;
