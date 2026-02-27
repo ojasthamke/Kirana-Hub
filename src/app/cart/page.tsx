@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ShoppingBag, Trash2, ChevronRight, CheckCircle, Package, ShoppingCart, CreditCard, Banknote, X } from 'lucide-react';
 import Link from 'next/link';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '../../context/CartContext';
 
 function PaymentModal({ total, onConfirm, onClose }: { total: number; onConfirm: (method: 'Cash' | 'Online') => void; onClose: () => void }) {
     const [method, setMethod] = useState<'Cash' | 'Online'>('Cash');

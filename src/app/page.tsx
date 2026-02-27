@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '../context/CartContext';
 
 interface Product {
     _id: string; name_en: string; name_hi: string;
