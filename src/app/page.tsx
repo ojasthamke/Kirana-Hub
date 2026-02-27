@@ -92,25 +92,27 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(false);
 
-    const loadProducts = () => {
-        setLoading(true);
-        setFetchError(false);
-        fetch('/api/products')
-            .then(r => r.json())
-            .then(d => {
-                if (Array.isArray(d)) {
-                    setProducts(d);
-                } else {
-                    console.error('Products API error:', d);
-                    setFetchError(true);
-                }
+    const loadProducts = async (attempt = 0) => {
+        if (attempt === 0) { setLoading(true); setFetchError(false); }
+        try {
+            const r = await fetch('/api/products');
+            const d = await r.json();
+            if (Array.isArray(d)) {
+                setProducts(d);
                 setLoading(false);
-            })
-            .catch(err => {
-                console.error('Products fetch failed:', err);
+                setFetchError(false);
+            } else {
+                throw new Error('Not array');
+            }
+        } catch {
+            if (attempt < 3) {
+                // Auto-retry silently up to 3 times (handles cold-start)
+                setTimeout(() => loadProducts(attempt + 1), 2000);
+            } else {
                 setFetchError(true);
                 setLoading(false);
-            });
+            }
+        }
     };
 
     useEffect(() => { loadProducts(); }, []);
@@ -213,7 +215,7 @@ export default function Home() {
                         <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️</div>
                         <h3 style={{ fontWeight: 700, marginBottom: '0.375rem', color: '#0f172a' }}>Could not load products</h3>
                         <p style={{ fontSize: '0.875rem', marginBottom: '1.5rem' }}>There was a problem connecting. Please try again.</p>
-                        <button onClick={loadProducts} style={{ padding: '0.75rem 2rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>
+                        <button onClick={() => loadProducts(0)} style={{ padding: '0.75rem 2rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>
                             Retry
                         </button>
                     </div>

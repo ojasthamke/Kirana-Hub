@@ -14,23 +14,28 @@ if (!cached) {
 
 async function dbConnect() {
   if (cached.conn) {
-    return cached.conn;
+    // Verify connection is still alive
+    try {
+      if (mongoose.connection.readyState === 1) return cached.conn;
+    } catch { }
+    cached.conn = null;
+    cached.promise = null;
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 15000,
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
     };
 
-    console.log('🔗 Attempting to connect to MongoDB...');
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => {
-      console.log('✅ MongoDB Connected');
       return m;
     }).catch((err) => {
-      console.error('❌ MongoDB Connection Error:', err.message);
       cached.promise = null;
+      cached.conn = null;
       throw err;
     });
   }
@@ -39,6 +44,7 @@ async function dbConnect() {
     cached.conn = await cached.promise;
   } catch (err) {
     cached.promise = null;
+    cached.conn = null;
     throw err;
   }
 

@@ -3,18 +3,30 @@ import dbConnect from '@/lib/db';
 import Product from '@/models/Product';
 import { getAuthSession } from '@/lib/auth';
 
+async function connectWithRetry(maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            await dbConnect();
+            return;
+        } catch (err) {
+            if (i === maxRetries - 1) throw err;
+            await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+    }
+}
+
 export async function GET(req: Request) {
     try {
-        await dbConnect();
+        await connectWithRetry(3);
         const { searchParams } = new URL(req.url);
         const category = searchParams.get('category');
 
-        let query = {};
+        let query: any = {};
         if (category && category !== 'All') {
-            query = { category };
+            query.category = category;
         }
 
-        const products = await Product.find(query).populate('vendor_id', 'store_name');
+        const products = await Product.find(query).populate('vendor_id', 'store_name').lean();
         return NextResponse.json(products);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -29,7 +41,7 @@ export async function POST(req: Request) {
 
     try {
         const data = await req.json();
-        await dbConnect();
+        await connectWithRetry(3);
         const product = await Product.create({ ...data, vendor_id: session.id });
         return NextResponse.json(product);
     } catch (error: any) {
