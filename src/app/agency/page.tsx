@@ -23,7 +23,7 @@ const Badge = ({ s }: { s: string }) => {
   const [bg, color] = m[s] || ['#f1f5f9', '#475569'];
   return <span style={{ background: bg, color, fontSize: '0.65rem', fontWeight: 800, padding: '0.25rem 0.6rem', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{s}</span>;
 };
-   
+
 const Modal = ({ title, onClose, children }: any) => (
   <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
     <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
@@ -455,9 +455,9 @@ export default function AgencyPage() {
                   <tbody>
                     {selectedOrder.products.map((p: any, i: number) => (
                       <tr key={i} style={{ borderBottom: i === selectedOrder.products.length - 1 ? 'none' : '1px solid #f8fafc' }}>
-                        <td style={{ padding: '0.6rem 0.8rem', fontWeight: 600 }}>{p.name}</td>
+                        <td style={{ padding: '0.6rem 0.8rem', fontWeight: 600 }}>{p.name_en || p.name || '—'}</td>
                         <td style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>{p.quantity}</td>
-                        <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>₹{p.price * p.quantity}</td>
+                        <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>₹{p.total ?? (p.price * p.quantity)}</td>
                       </tr>
                     ))}
                   </tbody>

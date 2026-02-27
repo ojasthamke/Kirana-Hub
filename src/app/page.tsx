@@ -25,6 +25,8 @@ function CardMenu({ product, qty, onAdd, onRemove }: {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
+    // Senior dev: Removed annoying whole-page reload timer.
+    // Use proper data fetching/caching instead.
     useEffect(() => {
         const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
         document.addEventListener('mousedown', handler);
@@ -111,9 +113,8 @@ export default function Home() {
 
     const handleAdd = (p: Product) => {
         const qty = getQty(p._id);
-        // Enforce min_qty on first add
-        const nextQty = qty === 0 ? p.min_qty : qty + p.min_qty;
-        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: qty === 0 ? p.min_qty : qty + 1, vendorId: p.vendor_id?._id || '' });
+        const nextQty = qty === 0 ? p.min_qty : qty + 1;
+        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: nextQty, vendorId: p.vendor_id?._id || '', minQty: p.min_qty });
     };
 
     const handleUpdate = (p: Product, newQty: number) => {
@@ -121,13 +122,13 @@ export default function Home() {
         if (newQty === 0) { updateQuantity(p._id, 0); return; }
         // Enforce minimum qty
         const safeQty = newQty < p.min_qty ? p.min_qty : newQty;
-        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: safeQty, vendorId: p.vendor_id?._id || '' });
+        addToCart({ productId: p._id, name: p.name_en, price: p.price, quantity: safeQty, vendorId: p.vendor_id?._id || '', minQty: p.min_qty });
     };
 
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
     const filtered = products.filter(p =>
         (filter === 'All' || p.category === filter) &&
-        (p.name_en.toLowerCase().includes(search.toLowerCase()) || p.name_hi.includes(search))
+        (p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.name_hi || '').includes(search))
     );
 
     return (

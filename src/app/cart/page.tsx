@@ -200,7 +200,7 @@ export default function CartPage() {
                 />
             )}
 
-            <style jsx>{`
+            <style>{`
                 @media (max-width: 1024px) {
                     .cart-grid {
                         grid-template-columns: 1fr !important;

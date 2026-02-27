@@ -776,10 +776,10 @@ export default function AdminPage() {
                                     <tbody>
                                         {selected.products?.map((p: any, i: number) => (
                                             <tr key={i} style={{ borderBottom: i === selected.products.length - 1 ? 'none' : '1px solid var(--gray-50)' }}>
-                                                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{p.name}</td>
+                                                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{p.name_en || p.name || '—'}</td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center' }}>{p.quantity}</td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'right' }}>₹{p.price}</td>
-                                                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 700 }}>₹{p.price * p.quantity}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 700 }}>₹{p.total ?? (p.price * p.quantity)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

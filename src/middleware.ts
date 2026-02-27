@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Pages that don't require login
-const PUBLIC_PATHS = ['/login', '/register/user', '/register/agency'];
+const PUBLIC_PATHS = ['/', '/login', '/register/user', '/register/agency'];
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;

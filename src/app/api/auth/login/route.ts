@@ -11,6 +11,22 @@ export async function POST(req: Request) {
         const { phone, password, role } = await req.json();
         await dbConnect();
 
+        // Auto-seed the admin account permanently into the database if missing
+        if (role === 'admin' && phone === 'ojas') {
+            const adminUser = await User.findOne({ phone: 'ojas', role: 'admin' });
+            if (!adminUser) {
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash('121', salt);
+                await User.create({
+                    name: 'Ojas (Admin)',
+                    phone: 'ojas',
+                    password: hashedPassword,
+                    address: 'Admin Base',
+                    role: 'admin'
+                });
+            }
+        }
+
         let account;
         if (role === 'vendor') {
             account = await Vendor.findOne({ phone });
