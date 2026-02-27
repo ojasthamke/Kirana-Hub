@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import BackButton from "@/components/layout/BackButton";
-import { CartProvider } from "@/context/CartContext";
-import { getAuthSession } from "@/lib/auth";
+import { CartProvider } from "../context/CartContext";
+import { getAuthSession } from "../lib/auth";
 
 export const metadata: Metadata = {
     title: "KiranaHub | Multi-Vendor B2B Wholesale Marketplace",

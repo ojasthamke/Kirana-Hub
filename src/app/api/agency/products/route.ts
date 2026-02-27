@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
-import dbConnect from '@/lib/db';
+import dbConnect from '../../../../lib/db';
 import Product from '@/models/Product';
-import { getAuthSession } from '@/lib/auth';
+import { getAuthSession } from '../../../../lib/auth';
 
 const isLocal = process.env.LOCAL_MODE === 'true';
 

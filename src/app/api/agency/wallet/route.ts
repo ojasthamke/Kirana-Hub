@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '../../../../lib/db';
 import Order from '@/models/Order';
-import { getAuthSession } from '@/lib/auth';
+import { getAuthSession } from '../../../../lib/auth';
 
 export async function GET() {
     const session = getAuthSession();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '../../../../lib/db';
 
 // This endpoint is called by Vercel Cron every 5 minutes
 // to prevent cold starts on the DB connection

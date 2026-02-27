@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabase';
-import { getAuthSession } from '@/lib/auth';
+import { supabase } from '../../../../lib/supabase';
+import { getAuthSession } from '../../../../lib/auth';
 
 export async function GET() {
     const session = getAuthSession();

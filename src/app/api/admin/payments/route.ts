@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
+import dbConnect from '../../../../lib/db';
 import VendorWallet from '@/models/VendorWallet';
-import { getAuthSession } from '@/lib/auth';
+import { getAuthSession } from '../../../../lib/auth';
 
 export async function POST(req: Request) {
     const session = getAuthSession();
