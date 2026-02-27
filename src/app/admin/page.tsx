@@ -131,9 +131,6 @@ export default function AdminPage() {
 
     useEffect(() => {
         load();
-        // Auto-refresh every 20 seconds
-        const interval = setInterval(load, 20000);
-        return () => clearInterval(interval);
     }, [load]);
 
     /* ── Vendor actions ── */

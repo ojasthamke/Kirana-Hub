@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     try {
         const {
             name, store_name, store_address, gst_number,
-            phone, alternate_phone, email, password, role
+            phone, alternate_phone, email, password, role, business_type
         } = await req.json();
 
         await dbConnect();
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 
             await User.create({
                 name, phone, address: store_address,
+                business_type: business_type || 'Kirana Store',
                 password: hashedPassword,
                 role: 'user'
             });

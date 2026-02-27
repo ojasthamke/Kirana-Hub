@@ -5,9 +5,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Phone, Lock, MapPin, ChevronRight, CheckCircle, Store } from 'lucide-react';
 
+const BUSINESS_TYPES = [
+    { id: 'Kirana Store', emoji: '🏪', label: 'Kirana Store' },
+    { id: 'Restaurant / Dhaba', emoji: '🍽️', label: 'Restaurant / Dhaba' },
+    { id: 'Medical Shop', emoji: '💊', label: 'Medical Shop' },
+    { id: 'Bakery', emoji: '🥐', label: 'Bakery' },
+    { id: 'Sweet Shop', emoji: '🍬', label: 'Sweet Shop' },
+    { id: 'Tea / Juice Stall', emoji: '🍵', label: 'Tea / Juice Stall' },
+    { id: 'Canteen', emoji: '🥘', label: 'Canteen / Mess' },
+    { id: 'Supermarket', emoji: '🛒', label: 'Supermarket' },
+    { id: 'Hotel', emoji: '🏨', label: 'Hotel' },
+    { id: 'Other', emoji: '🏢', label: 'Other Business' },
+];
+
 export default function UserRegistration() {
     const router = useRouter();
-    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '' });
+    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -43,7 +56,7 @@ export default function UserRegistration() {
 
     return (
         <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', background: 'var(--gray-50)' }}>
-            <div style={{ width: '100%', maxWidth: '440px' }}>
+            <div style={{ width: '100%', maxWidth: '480px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 800, color: 'var(--gray-900)' }}>
                         <Store size={22} color="var(--accent)" strokeWidth={2.5} />KiranaHub
@@ -55,6 +68,37 @@ export default function UserRegistration() {
                 <div style={{ background: 'var(--white)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--gray-200)', padding: '2rem', boxShadow: 'var(--shadow-sm)' }}>
                     {error && <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: 'var(--red-light)', borderRadius: 'var(--radius-sm)', color: 'var(--red)', fontSize: '0.875rem' }}>{error}</div>}
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                        {/* Business Type */}
+                        <div className="form-field">
+                            <label className="field-label" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginBottom: '0.625rem', display: 'block' }}>
+                                What type of business do you run?
+                            </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.5rem' }}>
+                                {BUSINESS_TYPES.map(bt => (
+                                    <button
+                                        key={bt.id}
+                                        type="button"
+                                        onClick={() => setForm(p => ({ ...p, business_type: bt.id }))}
+                                        style={{
+                                            padding: '0.625rem 0.5rem',
+                                            borderRadius: 10,
+                                            border: `1.5px solid ${form.business_type === bt.id ? '#0f172a' : '#e2e8f0'}`,
+                                            background: form.business_type === bt.id ? '#0f172a' : '#f8fafc',
+                                            color: form.business_type === bt.id ? '#fff' : '#475569',
+                                            cursor: 'pointer',
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
+                                            fontSize: '0.75rem', fontWeight: 600,
+                                            transition: 'all 0.15s',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '1.25rem' }}>{bt.emoji}</span>
+                                        {bt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="form-field">
                             <label className="field-label">Full Name</label>
                             <div className="input-with-icon">
@@ -70,7 +114,7 @@ export default function UserRegistration() {
                             </div>
                         </div>
                         <div className="form-field">
-                            <label className="field-label">Store Address</label>
+                            <label className="field-label">Store / Delivery Address</label>
                             <div className="input-with-icon">
                                 <span className="input-icon"><MapPin size={18} /></span>
                                 <input className="input" type="text" placeholder="Delivery address" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} required />

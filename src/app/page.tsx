@@ -91,18 +91,11 @@ export default function Home() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
 
-    const loadProducts = () => {
+    useEffect(() => {
         fetch('/api/products')
             .then(r => r.json())
             .then(d => { if (Array.isArray(d)) setProducts(d); setLoading(false); })
             .catch(() => setLoading(false));
-    };
-
-    useEffect(() => {
-        loadProducts();
-        // Auto-refresh every 30 seconds so changes from admin/agency appear live
-        const interval = setInterval(loadProducts, 30000);
-        return () => clearInterval(interval);
     }, []);
 
     const getQty = (id: string) => cart.find(i => i.productId === id)?.quantity || 0;

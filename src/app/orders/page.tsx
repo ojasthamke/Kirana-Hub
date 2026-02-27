@@ -60,9 +60,6 @@ export default function UserOrders() {
 
     useEffect(() => {
         loadOrders();
-        // Refresh every 30 seconds to see status updates
-        const interval = setInterval(loadOrders, 30000);
-        return () => clearInterval(interval);
     }, []);
 
     if (loading) return (
