@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/db';
-import Vendor from '@/models/Vendor';
+import { supabase } from '@/lib/supabase';
 import { getAuthSession } from '@/lib/auth';
 
 // GET all vendors — Admin only
@@ -10,9 +9,20 @@ export async function GET() {
     if (!session || session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    await dbConnect();
-    const vendors = await Vendor.find({}).select('-password').sort({ createdAt: -1 });
-    return NextResponse.json(vendors);
+
+    const { data: vendors, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Alias id to _id for frontend
+    const formattedVendors = vendors.map(v => {
+        const { password, ...rest } = v;
+        return { ...rest, _id: v.id };
+    });
+    return NextResponse.json(formattedVendors);
 }
 
 // POST — Admin creates a new vendor directly
@@ -23,24 +33,33 @@ export async function POST(req: Request) {
     }
     try {
         const { name, store_name, store_address, gst_number, turnover, phone, email, password } = await req.json();
-        await dbConnect();
 
-        const existing = await Vendor.findOne({ $or: [{ phone }, { gst_number }] });
+        const { data: existing } = await supabase
+            .from('vendors')
+            .select('id')
+            .or(`phone.eq.${phone},gst_number.eq.${gst_number}`)
+            .single();
+
         if (existing) {
             return NextResponse.json({ error: 'Vendor with this phone or GST already exists' }, { status: 400 });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const vendor = await Vendor.create({
-            name, store_name, store_address, gst_number, turnover,
-            phone, email, password: hashedPassword,
-            status: 'approved', // Admin-created vendors are auto-approved
-            role: 'vendor',
-        });
+        const { data: vendor, error } = await supabase
+            .from('vendors')
+            .insert({
+                name, store_name, store_address, gst_number, turnover,
+                phone, email, password: hashedPassword,
+                status: 'approved', // Admin-created vendors are auto-approved
+                role: 'vendor',
+            })
+            .select()
+            .single();
 
-        const vendorObj = vendor.toObject();
-        delete vendorObj.password;
-        return NextResponse.json({ success: true, vendor: vendorObj });
+        if (error) throw error;
+
+        const { password: _, ...vendorObj } = vendor;
+        return NextResponse.json({ success: true, vendor: { ...vendorObj, _id: vendorObj.id } });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -54,15 +73,23 @@ export async function PATCH(req: Request) {
     }
     try {
         const { vendorId, status, password, ...rest } = await req.json();
-        await dbConnect();
         const updateData: any = { ...rest };
         if (status) updateData.status = status;
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password, 10);
         }
 
-        const vendor = await Vendor.findByIdAndUpdate(vendorId, updateData, { new: true }).select('-password');
-        return NextResponse.json({ success: true, vendor });
+        const { data: vendor, error } = await supabase
+            .from('vendors')
+            .update(updateData)
+            .eq('id', vendorId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        const { password: _, ...vendorObj } = vendor;
+        return NextResponse.json({ success: true, vendor: { ...vendorObj, _id: vendorObj.id } });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -74,8 +101,12 @@ export async function DELETE(req: Request) {
     if (!session || session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { vendorId } = await req.json();
-    await dbConnect();
-    await Vendor.findByIdAndDelete(vendorId);
-    return NextResponse.json({ success: true });
+    try {
+        const { vendorId } = await req.json();
+        const { error } = await supabase.from('vendors').delete().eq('id', vendorId);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }

@@ -1,1 +1,0 @@
-mongodb+srv://ojasthamke3_db_user:890@ojas.jrz6hcp.mongodb.net/kirana_hub?retryWrites=true&w=majority&appName=OJAS

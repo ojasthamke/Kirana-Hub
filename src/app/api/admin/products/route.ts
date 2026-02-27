@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
-import dbConnect from '@/lib/db';
-import Product from '@/models/Product';
+import { supabase } from '@/lib/supabase';
 import { getAuthSession } from '@/lib/auth';
 
 export async function GET() {
@@ -9,9 +7,23 @@ export async function GET() {
     if (!session || session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    await dbConnect();
-    const products = await Product.find({}).populate('vendor_id', 'store_name name').sort({ createdAt: -1 });
-    return NextResponse.json(products);
+
+    const { data: products, error } = await supabase
+        .from('products')
+        .select(`
+            *,
+            vendor_id:vendors (store_name, name)
+        `)
+        .order('created_at', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const formattedProducts = products.map(p => ({
+        ...p,
+        _id: p.id,
+        vendor_id: p.vendor_id ? { ...p.vendor_id, _id: p.vendor_id.id } : null
+    }));
+    return NextResponse.json(formattedProducts);
 }
 
 export async function POST(req: Request) {
@@ -21,10 +33,14 @@ export async function POST(req: Request) {
     }
     try {
         const data = await req.json();
-        await dbConnect();
-        const product = await Product.create(data);
-        revalidateTag('products'); // Update homepage cache immediately
-        return NextResponse.json({ success: true, product });
+        const { data: product, error } = await supabase
+            .from('products')
+            .insert(data)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, product: { ...product, _id: product.id } });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -37,10 +53,15 @@ export async function PATCH(req: Request) {
     }
     try {
         const { productId, ...updates } = await req.json();
-        await dbConnect();
-        const product = await Product.findByIdAndUpdate(productId, updates, { new: true });
-        revalidateTag('products'); // Update homepage cache immediately
-        return NextResponse.json({ success: true, product });
+        const { data: product, error } = await supabase
+            .from('products')
+            .update(updates)
+            .eq('id', productId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json({ success: true, product: { ...product, _id: product.id } });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -53,9 +74,8 @@ export async function DELETE(req: Request) {
     }
     try {
         const { productId } = await req.json();
-        await dbConnect();
-        await Product.findByIdAndDelete(productId);
-        revalidateTag('products'); // Update homepage cache immediately
+        const { error } = await supabase.from('products').delete().eq('id', productId);
+        if (error) throw error;
         return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
