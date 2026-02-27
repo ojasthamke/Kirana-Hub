@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Phone, Lock, ChevronRight, Store, ShieldCheck, User } from 'lucide-react';
 
 const ROLES = [
@@ -12,7 +11,6 @@ const ROLES = [
 ];
 
 export default function LoginClient() {
-    const router = useRouter();
     const [role, setRole] = useState<'user' | 'vendor' | 'admin'>('user');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
@@ -30,10 +28,10 @@ export default function LoginClient() {
             });
             const data = await res.json();
             if (data.success) {
-                if (role === 'admin') router.push('/admin');
-                else if (role === 'vendor') router.push('/agency');
-                else router.push('/');
-                router.refresh();
+                // Use hard navigation so the cookie is fully sent on the next request
+                if (role === 'admin') window.location.href = '/admin';
+                else if (role === 'vendor') window.location.href = '/agency';
+                else window.location.href = '/';
             } else {
                 setError(data.error || 'Invalid credentials');
             }

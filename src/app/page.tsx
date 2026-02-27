@@ -90,13 +90,30 @@ export default function Home() {
     const [filter, setFilter] = useState('All');
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
 
-    useEffect(() => {
+    const loadProducts = () => {
+        setLoading(true);
+        setFetchError(false);
         fetch('/api/products')
             .then(r => r.json())
-            .then(d => { if (Array.isArray(d)) setProducts(d); setLoading(false); })
-            .catch(() => setLoading(false));
-    }, []);
+            .then(d => {
+                if (Array.isArray(d)) {
+                    setProducts(d);
+                } else {
+                    console.error('Products API error:', d);
+                    setFetchError(true);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Products fetch failed:', err);
+                setFetchError(true);
+                setLoading(false);
+            });
+    };
+
+    useEffect(() => { loadProducts(); }, []);
 
     const getQty = (id: string) => cart.find(i => i.productId === id)?.quantity || 0;
 
@@ -190,8 +207,20 @@ export default function Home() {
                     </div>
                 )}
 
+                {/* ── ERROR ── */}
+                {fetchError && (
+                    <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#94a3b8' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️</div>
+                        <h3 style={{ fontWeight: 700, marginBottom: '0.375rem', color: '#0f172a' }}>Could not load products</h3>
+                        <p style={{ fontSize: '0.875rem', marginBottom: '1.5rem' }}>There was a problem connecting. Please try again.</p>
+                        <button onClick={loadProducts} style={{ padding: '0.75rem 2rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>
+                            Retry
+                        </button>
+                    </div>
+                )}
+
                 {/* ── EMPTY ── */}
-                {!loading && filtered.length === 0 && (
+                {!loading && !fetchError && filtered.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '4rem 2rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
                         <Package size={48} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
                         <h3 style={{ fontWeight: 700, marginBottom: '0.375rem' }}>No products found</h3>
