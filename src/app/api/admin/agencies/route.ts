@@ -53,11 +53,13 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     try {
-        const { vendorId, status, ...updates } = await req.json();
+        const { vendorId, status, password, ...rest } = await req.json();
         await dbConnect();
-        const updateData: any = {};
+        const updateData: any = { ...rest };
         if (status) updateData.status = status;
-        Object.assign(updateData, updates);
+        if (password && password.trim() !== '') {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
 
         const vendor = await Vendor.findByIdAndUpdate(vendorId, updateData, { new: true }).select('-password');
         return NextResponse.json({ success: true, vendor });

@@ -8,9 +8,10 @@ import {
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────── */
+interface User { _id: string; name: string; phone: string; address: string; business_type: string; createdAt: string; }
 interface Agency { _id: string; name: string; store_name: string; gst_number: string; phone: string; email: string; store_address: string; turnover: string; status: 'approved' | 'blocked' | 'pending'; createdAt: string; }
 interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id: { _id: string; store_name: string } | null; offer?: string; }
-interface Order { _id: string; order_id: string; master_order_id: string; total_amount: number; status: string; payment_status: string; createdAt: string; vendor_id: { store_name: string } | null; user_id: { name: string; phone: string } | null; products: any[]; }
+interface Order { _id: string; order_id: string; master_order_id: string; total_amount: number; status: string; payment_status: string; payment_method?: string; createdAt: string; vendor_id: { store_name: string } | null; user_id: { name: string; phone: string; address?: string } | null; products: any[]; }
 
 const CATEGORIES = ['Pulses', 'Rice', 'Staples', 'Spices', 'Oil', 'Flour', 'Sugar', 'Dry Fruits', 'Other'];
 const ORDER_STATUSES = ['Pending', 'Accepted', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
@@ -73,13 +74,14 @@ const Badge = ({ status }: { status: string }) => {
 /* ─── Main Component ──────────────────────────────────────── */
 export default function AdminPage() {
     const router = useRouter();
-    const [tab, setTab] = useState<'overview' | 'vendors' | 'products' | 'orders'>('overview');
+    const [tab, setTab] = useState<'overview' | 'vendors' | 'products' | 'orders' | 'users'>('overview');
     const [vendors, setVendors] = useState<Agency[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
-    const [modal, setModal] = useState<'vendor' | 'product' | 'editVendor' | 'editProduct' | null>(null);
+    const [modal, setModal] = useState<'vendor' | 'product' | 'editVendor' | 'editProduct' | 'editUser' | 'orderDetails' | null>(null);
     const [selected, setSelected] = useState<any>(null);
     const [showPw, setShowPw] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +94,10 @@ export default function AdminPage() {
     const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', vendor_id: '', offer: '' };
     const [pForm, setPForm] = useState(emptyP);
 
+    /* User form */
+    const emptyU = { name: '', phone: '', address: '', password: '', business_type: 'Kirana Store' };
+    const [uForm, setUForm] = useState(emptyU);
+
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState('');
     const [customCat, setCustomCat] = useState('');
@@ -101,25 +107,28 @@ export default function AdminPage() {
         setLoading(true);
         setLoadError('');
         try {
-            const [vr, pr, or] = await Promise.all([
+            const [vr, pr, or, ur] = await Promise.all([
                 fetch('/api/admin/agencies'),
                 fetch('/api/admin/products'),
-                fetch('/api/admin/orders')
+                fetch('/api/admin/orders'),
+                fetch('/api/admin/users')
             ]);
             // Check for 401 — session expired or not logged in
             if (vr.status === 401) {
                 router.push('/login');
                 return;
             }
-            const [vd, pd, od] = await Promise.all([
+            const [vd, pd, od, ud] = await Promise.all([
                 vr.ok ? vr.json() : Promise.resolve([]),
                 pr.ok ? pr.json() : Promise.resolve([]),
-                or.ok ? or.json() : Promise.resolve([])
+                or.ok ? or.json() : Promise.resolve([]),
+                ur.ok ? ur.json() : Promise.resolve([])
             ]);
 
             if (Array.isArray(vd)) setVendors(vd);
             if (Array.isArray(pd)) setProducts(pd);
             if (Array.isArray(od)) setOrders(od);
+            if (Array.isArray(ud)) setUsers(ud);
 
             if (!vr.ok && vr.status === 401) { router.push('/login'); return; }
             if (!vr.ok || !pr.ok || !or.ok) setLoadError('Some data failed to load. Please try again.');
@@ -151,6 +160,41 @@ export default function AdminPage() {
     const deleteVendor = async (vendorId: string) => {
         if (!confirm('Delete this agency? This cannot be undone.')) return;
         await fetch('/api/admin/agencies', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId }) });
+        load();
+    };
+
+    const openEditVendor = (v: any) => {
+        setSelected(v);
+        setVForm({ name: v.name, store_name: v.store_name, store_address: v.store_address, gst_number: v.gst_number, turnover: v.turnover, phone: v.phone, email: v.email, password: '' });
+        setModal('editVendor');
+    };
+
+    const saveVendor = async () => {
+        setSaving(true); setErr('');
+        const res = await fetch('/api/admin/agencies', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ vendorId: selected._id, ...vForm }) });
+        const data = await res.json();
+        if (data.success) { setModal(null); load(); } else setErr(data.error || 'Failed to update');
+        setSaving(false);
+    };
+
+    /* ── User actions ── */
+    const openEditUser = (u: any) => {
+        setSelected(u);
+        setUForm({ name: u.name, phone: u.phone, address: u.address, business_type: u.business_type, password: '' });
+        setModal('editUser');
+    };
+
+    const saveUser = async () => {
+        setSaving(true); setErr('');
+        const res = await fetch('/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: selected._id, ...uForm }) });
+        const data = await res.json();
+        if (data.success) { setModal(null); load(); } else setErr(data.error || 'Failed to update');
+        setSaving(false);
+    };
+
+    const deleteUser = async (userId: string) => {
+        if (!confirm('Delete this user?')) return;
+        await fetch('/api/admin/users', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
         load();
     };
 
@@ -246,6 +290,7 @@ export default function AdminPage() {
                         {[
                             { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
                             { id: 'vendors', icon: <Users size={16} />, label: `Agencies (${vendors.length})` },
+                            { id: 'users', icon: <Users size={16} />, label: `Users (${users.length})` },
                             { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
                             { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
                         ].map(t => (
@@ -357,11 +402,64 @@ export default function AdminPage() {
                                                     <td style={{ padding: '1rem' }}><Badge status={v.status} /></td>
                                                     <td style={{ padding: '1rem' }}>
                                                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'nowrap' }}>
+                                                            <button onClick={() => openEditVendor(v)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid var(--gray-200)', background: '#fff', color: 'var(--gray-600)', cursor: 'pointer' }}>
+                                                                <Edit2 size={14} />
+                                                            </button>
                                                             <button onClick={() => updateVendor(v._id, { status: v.status === 'approved' ? 'blocked' : 'approved' })}
                                                                 style={{ padding: '0.35rem 0.75rem', borderRadius: 6, border: `1.5px solid ${v.status === 'approved' ? '#fee2e2' : '#dcfce7'}`, background: v.status === 'approved' ? '#fff5f5' : '#f0fdf4', color: v.status === 'approved' ? '#ef4444' : '#15803d', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                                                 {v.status === 'approved' ? 'Block' : 'Approve'}
                                                             </button>
                                                             <button onClick={() => deleteVendor(v._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── USERS ── */}
+                {tab === 'users' && (
+                    <div style={{ animation: 'fadeUp 0.35s ease both' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h2 style={{ fontSize: '1.125rem' }}>All Registered Users</h2>
+                        </div>
+                        {users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)).length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed var(--gray-200)', borderRadius: 16, color: 'var(--gray-400)' }}>
+                                <Users size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
+                                <p>No users found matching your search.</p>
+                            </div>
+                        ) : (
+                            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-100)', overflow: 'hidden' }}>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 700 }}>
+                                        <thead>
+                                            <tr style={{ background: 'var(--gray-50)' }}>
+                                                {['Name', 'Phone/ID', 'Business Type', 'Address', 'Joined', 'Actions'].map(h => (
+                                                    <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-100)', whiteSpace: 'nowrap' }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery)).map(u => (
+                                                <tr key={u._id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                                                    <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--gray-900)' }}>{u.name}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--gray-600)' }}>{u.phone}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--gray-600)' }}>{u.business_type}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--gray-500)', fontSize: '0.8rem' }}>{u.address}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--gray-400)', fontSize: '0.8125rem' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button onClick={() => openEditUser(u)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid var(--gray-200)', background: '#fff', color: 'var(--gray-600)', cursor: 'pointer' }}>
+                                                                <Edit2 size={14} />
+                                                            </button>
+                                                            <button onClick={() => deleteUser(u._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#ef4444', cursor: 'pointer' }}>
                                                                 <Trash2 size={14} />
                                                             </button>
                                                         </div>
@@ -446,7 +544,7 @@ export default function AdminPage() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
                                         <thead>
                                             <tr style={{ background: 'var(--gray-50)' }}>
-                                                {['Order ID', 'Customer', 'Agency', 'Items', 'Amount', 'Pay Method', 'Status', 'Payment', 'Date'].map(h => (
+                                                {['Order ID', 'Customer', 'Agency', 'Items', 'Amount', 'Pay Method', 'Status', 'Payment', 'Date', 'View'].map(h => (
                                                     <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-100)', whiteSpace: 'nowrap' }}>{h}</th>
                                                 ))}
                                             </tr>
@@ -481,6 +579,11 @@ export default function AdminPage() {
                                                         </select>
                                                     </td>
                                                     <td style={{ padding: '1rem', color: 'var(--gray-400)', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <button onClick={() => { setSelected(o); setModal('orderDetails'); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid var(--gray-200)', background: '#fff', color: 'var(--gray-600)', cursor: 'pointer' }}>
+                                                            <Eye size={14} />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -570,6 +673,125 @@ export default function AdminPage() {
                         <button onClick={modal === 'product' ? addProduct : saveProduct} disabled={saving} style={{ padding: '0.75rem', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
                             {saving ? 'Saving...' : modal === 'product' ? 'Add Product' : 'Save Changes'}
                         </button>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL: Edit Agency ── */}
+            {modal === 'editVendor' && (
+                <Modal title="Edit Agency Details" onClose={() => setModal(null)}>
+                    {err && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#ef4444', fontSize: '0.875rem' }}>{err}</div>}
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                            <FI label="Owner Name"><Input placeholder="Full name" value={vForm.name} onChange={(e: any) => setVForm(p => ({ ...p, name: e.target.value }))} /></FI>
+                            <FI label="Store Name"><Input placeholder="Store / Shop name" value={vForm.store_name} onChange={(e: any) => setVForm(p => ({ ...p, store_name: e.target.value }))} /></FI>
+                        </div>
+                        <FI label="Store Address"><Input placeholder="Full address" value={vForm.store_address} onChange={(e: any) => setVForm(p => ({ ...p, store_address: e.target.value }))} /></FI>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                            <FI label="Phone"><Input placeholder="+91 00000 00000" value={vForm.phone} onChange={(e: any) => setVForm(p => ({ ...p, phone: e.target.value }))} /></FI>
+                            <FI label="Email"><Input type="email" placeholder="email@store.com" value={vForm.email} onChange={(e: any) => setVForm(p => ({ ...p, email: e.target.value }))} /></FI>
+                        </div>
+                        <FI label="New Password (Leave blank to keep same)">
+                            <div style={{ position: 'relative' }}>
+                                <Input type={showPw ? 'text' : 'password'} placeholder="New login password" value={vForm.password} onChange={(e: any) => setVForm(p => ({ ...p, password: e.target.value }))} />
+                                <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)' }}>
+                                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </FI>
+                        <button onClick={saveVendor} disabled={saving} style={{ padding: '0.75rem', background: 'var(--gray-900)', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                            {saving ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL: Edit User ── */}
+            {modal === 'editUser' && (
+                <Modal title="Edit User Details" onClose={() => setModal(null)}>
+                    {err && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#ef4444', fontSize: '0.875rem' }}>{err}</div>}
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                        <FI label="Full Name"><Input placeholder="Full name" value={uForm.name} onChange={(e: any) => setUForm(p => ({ ...p, name: e.target.value }))} /></FI>
+                        <FI label="Phone / ID"><Input placeholder="Phone number" value={uForm.phone} onChange={(e: any) => setUForm(p => ({ ...p, phone: e.target.value }))} /></FI>
+                        <FI label="Store Address"><Input placeholder="Full address" value={uForm.address} onChange={(e: any) => setUForm(p => ({ ...p, address: e.target.value }))} /></FI>
+                        <FI label="New Password (Leave blank to keep same)">
+                            <div style={{ position: 'relative' }}>
+                                <Input type={showPw ? 'text' : 'password'} placeholder="New login password" value={uForm.password} onChange={(e: any) => setUForm(p => ({ ...p, password: e.target.value }))} />
+                                <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)' }}>
+                                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </FI>
+                        <button onClick={saveUser} disabled={saving} style={{ padding: '0.75rem', background: 'var(--gray-900)', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                            {saving ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL: Order Details ── */}
+            {modal === 'orderDetails' && selected && (
+                <Modal title={`Order Details: ${selected.order_id?.slice(-8) || selected._id.slice(-8)}`} onClose={() => setModal(null)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        {/* Summary Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--gray-100)', paddingBottom: '1rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', fontWeight: 600, textTransform: 'uppercase' }}>Placed On</div>
+                                <div style={{ fontSize: '0.9375rem', fontWeight: 700 }}>{new Date(selected.createdAt).toLocaleString('en-IN')}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <Badge status={selected.status} />
+                                <div style={{ marginTop: '0.25rem' }}><Badge status={selected.payment_status} /></div>
+                            </div>
+                        </div>
+
+                        {/* Customer & Agency Info */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ padding: '1rem', background: 'var(--gray-50)', borderRadius: 12 }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Customer Details</div>
+                                <div style={{ fontWeight: 700 }}>{selected.user_id?.name || 'Unknown User'}</div>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--gray-600)' }}>{selected.user_id?.phone}</div>
+                                <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>{selected.user_id?.address}</div>
+                            </div>
+                            <div style={{ padding: '1rem', background: 'var(--gray-50)', borderRadius: 12 }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Agency Details</div>
+                                <div style={{ fontWeight: 700 }}>{selected.vendor_id?.store_name || 'Direct Order'}</div>
+                                <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>Payment: {selected.payment_method || 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.75rem' }}>Ordered Items</div>
+                            <div style={{ border: '1.5px solid var(--gray-100)', borderRadius: 12, overflow: 'hidden' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                                    <thead>
+                                        <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left' }}>Item</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'center' }}>Qty</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'right' }}>Price</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'right' }}>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selected.products?.map((p: any, i: number) => (
+                                            <tr key={i} style={{ borderBottom: i === selected.products.length - 1 ? 'none' : '1px solid var(--gray-50)' }}>
+                                                <td style={{ padding: '0.75rem', fontWeight: 600 }}>{p.name}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center' }}>{p.quantity}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>₹{p.price}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 700 }}>₹{p.price * p.quantity}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style={{ background: 'var(--gray-900)', color: '#fff' }}>
+                                            <td colSpan={3} style={{ padding: '0.875rem', fontWeight: 700 }}>Total Order Amount</td>
+                                            <td style={{ padding: '0.875rem', textAlign: 'right', fontWeight: 800, fontSize: '1rem' }}>₹{selected.total_amount}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </Modal>
             )}

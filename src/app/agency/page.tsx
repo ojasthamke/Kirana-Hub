@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw, Search, Banknote, CreditCard } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw, Search, Banknote, CreditCard, Eye } from 'lucide-react';
 
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: { name: string; phone: string; address: string } | null; }
 interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; }
@@ -51,8 +51,9 @@ export default function AgencyPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [wallet, setWallet] = useState<Wallet>({ totalRevenue: 0, pendingAmount: 0, totalPaid: 0, orderCount: 0 });
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<'add' | 'edit' | null>(null);
+  const [modal, setModal] = useState<'add' | 'edit' | 'details' | null>(null);
   const [sel, setSel] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +70,7 @@ export default function AgencyPage() {
         fetch('/api/agency/products').catch(() => null),
         fetch('/api/agency/wallet').catch(() => null),
       ]);
+      if (or?.status === 401) { window.location.href = '/login'; return; }
       const [od, pd, wd] = await Promise.all([
         or?.json().catch(() => []),
         pr?.json().catch(() => []),
@@ -221,7 +223,10 @@ export default function AgencyPage() {
                       <span style={{ color: o.payment_method === 'Cash' ? '#d97706' : '#2563eb', fontWeight: 700 }}>{o.payment_method}</span>
                     </div>
                   </div>
-                  <Badge s={o.status} />
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ padding: '0.3rem', border: '1.5px solid #f1f5f9', borderRadius: 6, background: '#fff', cursor: 'pointer' }}><Eye size={14} color="#64748b" /></button>
+                    <Badge s={o.status} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -257,7 +262,7 @@ export default function AgencyPage() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 900 }}>
                     <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Order ID', 'Customer', 'Items', 'Amount', 'Pay Method', 'Payment', 'Status', 'Date'].map(h => (
+                      {['Order ID', 'Customer', 'Items', 'Amount', 'Status', 'Date', 'View'].map(h => (
                         <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
@@ -290,6 +295,11 @@ export default function AgencyPage() {
                             </select>
                           </td>
                           <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ padding: '0.35rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>
+                              <Eye size={14} color="#475569" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -406,6 +416,65 @@ export default function AgencyPage() {
               style={{ padding: '0.75rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.9375rem', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Saving...' : (modal === 'add' ? 'Add Product' : 'Save Changes')}
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Order Details Modal */}
+      {modal === 'details' && selectedOrder && (
+        <Modal title={`Order Details: #${selectedOrder.order_id?.slice(-6) || selectedOrder._id.slice(-6)}`} onClose={() => setModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Placed On</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{new Date(selectedOrder.createdAt).toLocaleString()}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <Badge s={selectedOrder.status} />
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 12 }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Customer Details</div>
+              <div style={{ fontWeight: 700 }}>{selectedOrder.user_id?.name || 'Unknown'}</div>
+              <div style={{ fontSize: '0.875rem', color: '#475569' }}>{selectedOrder.user_id?.phone}</div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.4rem' }}>{selectedOrder.user_id?.address}</div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Items</div>
+              <div style={{ border: '1.5px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead style={{ background: '#f8fafc' }}>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'left' }}>Item</th>
+                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>Qty</th>
+                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrder.products.map((p: any, i: number) => (
+                      <tr key={i} style={{ borderBottom: i === selectedOrder.products.length - 1 ? 'none' : '1px solid #f8fafc' }}>
+                        <td style={{ padding: '0.6rem 0.8rem', fontWeight: 600 }}>{p.name}</td>
+                        <td style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>{p.quantity}</td>
+                        <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>₹{p.price * p.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#0f172a', color: '#fff' }}>
+                      <td colSpan={2} style={{ padding: '0.75rem 0.8rem', fontWeight: 700 }}>Grand Total</td>
+                      <td style={{ padding: '0.75rem 0.8rem', textAlign: 'right', fontWeight: 800 }}>₹{selectedOrder.total_amount}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <SI label="Payment Method"><div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{selectedOrder.payment_method}</div></SI>
+              <SI label="Payment Status"><div style={{ fontWeight: 700, fontSize: '0.875rem', color: selectedOrder.payment_status === 'Paid' ? '#16a34a' : '#ef4444' }}>{selectedOrder.payment_status}</div></SI>
+            </div>
           </div>
         </Modal>
       )}
