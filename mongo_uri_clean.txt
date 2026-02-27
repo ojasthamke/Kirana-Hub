@@ -1,0 +1,1 @@
+mongodb://ojasthamke3_db_user:khCUGxl2FkscvBdp@ac-c0fpphq-shard-00-00.jrz6hcp.mongodb.net:27017,ac-c0fpphq-shard-00-01.jrz6hcp.mongodb.net:27017,ac-c0fpphq-shard-00-02.jrz6hcp.mongodb.net:27017/kirana_hub?ssl=true&replicaSet=atlas-13q9ze&authSource=admin&retryWrites=true&w=majority

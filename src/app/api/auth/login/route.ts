@@ -1,53 +1,39 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import dbConnect from '@/lib/db';
-import User from '@/models/User';
-import Vendor from '@/models/Vendor';
+import { supabase } from '@/lib/supabase';
 import { signToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
     try {
         const { phone, password, role } = await req.json();
-        await dbConnect();
 
-        // Auto-seed the admin account permanently into the database if missing
-        if (role === 'admin' && phone === 'ojas') {
-            const adminUser = await User.findOne({ phone: 'ojas', role: 'admin' });
-            if (!adminUser) {
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash('121', salt);
-                await User.create({
-                    name: 'Ojas (Admin)',
-                    phone: 'ojas',
-                    password: hashedPassword,
-                    address: 'Admin Base',
-                    role: 'admin'
-                });
-            }
-        }
+        // 1. Fetch user/vendor from Supabase
+        const table = role === 'vendor' ? 'vendors' : 'users';
+        const { data: account, error: fetchError } = await supabase
+            .from(table)
+            .select('*')
+            .eq('phone', phone)
+            .single();
 
-        let account;
-        if (role === 'vendor') {
-            account = await Vendor.findOne({ phone });
-            if (account && account.status !== 'approved') {
-                return NextResponse.json({ error: 'Vendor account pending approval' }, { status: 403 });
-            }
-        } else {
-            account = await User.findOne({ phone });
-        }
-
-        if (!account) {
+        if (fetchError || !account) {
             return NextResponse.json({ error: 'Account not found' }, { status: 404 });
         }
 
+        // 2. Check vendor approval status
+        if (role === 'vendor' && account.status !== 'approved') {
+            return NextResponse.json({ error: 'Vendor account pending approval' }, { status: 403 });
+        }
+
+        // 3. Verify Password
         const isMatch = await bcrypt.compare(password, account.password);
         if (!isMatch) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
+        // 4. Generate Token
         const token = signToken({
-            id: account._id,
+            id: account.id,
             role: account.role as any,
             name: account.name
         });
