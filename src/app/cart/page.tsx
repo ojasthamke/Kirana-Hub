@@ -70,7 +70,7 @@ export default function CartPage() {
         setCheckingOut(true);
         setError('');
         try {
-            const res = await fetch('/api/orders/checkout', {
+            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

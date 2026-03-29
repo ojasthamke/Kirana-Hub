@@ -21,7 +21,7 @@ export default function VendorRegistration() {
     const handleSubmit = async () => {
         setLoading(true); setError('');
         try {
-            const res = await fetch('/api/auth/register', {
+            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...form, role: 'vendor' })

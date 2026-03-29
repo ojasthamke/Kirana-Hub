@@ -60,10 +60,10 @@ export default function AdminPage() {
         setLoading(true); setLoadError(false);
         try {
             const [ur, ar, or, pr] = await Promise.all([
-                fetch('/api/admin/users'),
-                fetch('/api/admin/agencies'),
-                fetch('/api/admin/orders'),
-                fetch('/api/admin/products')
+                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/users'),
+                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/agencies'),
+                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/orders'),
+                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/products')
             ]);
             if (ur.status === 401) { window.location.href = '/login'; return; }
             setUsers(await ur.json());

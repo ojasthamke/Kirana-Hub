@@ -67,7 +67,7 @@ export default function Home() {
 
     const loadProducts = () => {
         setLoading(true); setFetchError(false);
-        fetch('/api/products').then(r => r.json()).then(d => {
+        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/products').then(r => r.json()).then(d => {
             if (Array.isArray(d)) setProducts(d); else setFetchError(true);
             setLoading(false);
         }).catch(() => { setFetchError(true); setLoading(false); });

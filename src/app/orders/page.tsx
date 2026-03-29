@@ -40,7 +40,7 @@ export default function UserOrders() {
     const loadOrders = async () => {
         setError('');
         try {
-            const res = await fetch('/api/orders');
+            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders');
             if (res.status === 401) {
                 setError('Please login to view your orders.');
                 setLoading(false);

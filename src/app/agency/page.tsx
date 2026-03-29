@@ -68,9 +68,9 @@ export default function AgencyPage() {
   const load = useCallback(async () => {
     try {
       const [or, pr, wr] = await Promise.all([
-        fetch('/api/orders').catch(() => null),
-        fetch('/api/agency/products').catch(() => null),
-        fetch('/api/agency/wallet').catch(() => null),
+        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders').catch(() => null),
+        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/products').catch(() => null),
+        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/wallet').catch(() => null),
       ]);
       if (or?.status === 401) { window.location.href = '/login'; return; }
       const [od, pd, wd] = await Promise.all([
@@ -133,7 +133,7 @@ export default function AgencyPage() {
 
   const deleteProd = async (productId: string) => {
     if (!confirm('Delete this product?')) return;
-    await fetch('/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+    await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
     load();
   };
 
