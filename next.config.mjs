@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Config options here
+    // Standard Next.js config
 };
 
 export default nextConfig;
