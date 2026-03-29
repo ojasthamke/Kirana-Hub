@@ -23,7 +23,7 @@ files.forEach(file => {
     let content = fs.readFileSync(file, 'utf8');
     const originalContent = content;
     // Handle both fetch('/api/ and fetch("/api/
-    content = content.replace(/fetch\(['"]\/api\//g, "fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/");
+    content = content.replace(/fetch\(['"]\/api\//g, "fetch(process.env.NEXT_PUBLIC_API_URL + '/api/");
     
     if (content !== originalContent) {
         fs.writeFileSync(file, content);

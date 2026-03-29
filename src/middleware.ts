@@ -17,19 +17,31 @@ export function middleware(request: NextRequest) {
     ) {
         // Add CORS for API routes
         if (pathname.startsWith('/api/')) {
-            // Handle preflight (OPTIONS) requests
+            const origin = request.headers.get('origin');
+            const allowedOrigins = [
+                'http://localhost',
+                'capacitor://localhost',
+                'http://localhost:3000'
+            ];
+            
+            // Determine if the origin should be allowed
+            const isAllowed = !origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+            const responseOrigin = isAllowed ? (origin || '*') : '*';
+
             if (request.method === 'OPTIONS') {
-                const res = new NextResponse(null, { status: 200 });
-                res.headers.set('Access-Control-Allow-Origin', '*');
-                res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-                res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                const res = new NextResponse(null, { status: 204 });
+                res.headers.set('Access-Control-Allow-Origin', responseOrigin);
+                res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+                res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+                res.headers.set('Access-Control-Allow-Credentials', 'true');
                 return res;
             }
 
             const response = NextResponse.next();
-            response.headers.set('Access-Control-Allow-Origin', '*');
-            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            response.headers.set('Access-Control-Allow-Origin', responseOrigin);
+            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            response.headers.set('Access-Control-Allow-Credentials', 'true');
             return response;
         }
         return NextResponse.next();
