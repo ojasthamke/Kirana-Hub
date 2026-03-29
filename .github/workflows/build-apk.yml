@@ -1,0 +1,66 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Rename API Folder for Static Export
+        run: |
+          if [ -d "src/app/api" ]; then
+            mv src/app/api src/app/_api
+            echo "Renamed API folder to _api"
+          fi
+
+      - name: Build Web Assets
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          node fix-api-urls.js
+          npm run build
+
+      - name: Restore API Folder
+        run: |
+          if [ -d "src/app/_api" ]; then
+            mv src/app/_api src/app/api
+            echo "Restored API folder"
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KiranaHub-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
