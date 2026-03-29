@@ -38,3 +38,6 @@ next-env.d.ts
 # Scripts
 create-admin.js
 .vercel
+
+# Local Database Data
+mongodb_data/
