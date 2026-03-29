@@ -15,6 +15,23 @@ export function middleware(request: NextRequest) {
         pathname.startsWith('/icons') ||
         pathname.startsWith('/images')
     ) {
+        // Add CORS for API routes
+        if (pathname.startsWith('/api/')) {
+            // Handle preflight (OPTIONS) requests
+            if (request.method === 'OPTIONS') {
+                const res = new NextResponse(null, { status: 200 });
+                res.headers.set('Access-Control-Allow-Origin', '*');
+                res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+                res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+                return res;
+            }
+
+            const response = NextResponse.next();
+            response.headers.set('Access-Control-Allow-Origin', '*');
+            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            return response;
+        }
         return NextResponse.next();
     }
 

@@ -24,9 +24,11 @@ export default function LoginClient() {
             const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // Needed for cross-origin cookies
                 body: JSON.stringify({ phone, password, role })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({ error: 'Invalid server response' }));
+            
             if (data.success) {
                 // Use hard navigation so the cookie is fully sent on the next request
                 if (role === 'admin') window.location.href = '/admin';
@@ -35,8 +37,9 @@ export default function LoginClient() {
             } else {
                 setError(data.error || 'Invalid credentials');
             }
-        } catch {
-            setError('Something went wrong. Please try again.');
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError(`Could not connect to server. Ensure you have internet and the API URL is correct.`);
         } finally {
             setLoading(false);
         }

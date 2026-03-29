@@ -22,16 +22,23 @@ export const verifyToken = (token: string): TokenPayload | null => {
 };
 
 export const getAuthSession = (): TokenPayload | null => {
-    // ── Real JWT auth ───────────────────────────────
-    const token = cookies().get('token')?.value;
-    if (!token) return null;
-    return verifyToken(token);
+    try {
+        const token = cookies().get('token')?.value;
+        if (!token) return null;
+        return verifyToken(token);
+    } catch {
+        return null; // Cookies are unavailable during static export
+    }
 };
 
 export const getVendorSession = (): TokenPayload | null => {
-    const token = cookies().get('token')?.value;
-    if (!token) return null;
-    return verifyToken(token);
+    try {
+        const token = cookies().get('token')?.value;
+        if (!token) return null;
+        return verifyToken(token);
+    } catch {
+        return null;
+    }
 };
 
 

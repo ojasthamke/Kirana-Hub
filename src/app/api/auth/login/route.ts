@@ -8,7 +8,11 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
     try {
-        await dbConnect(); // Connect to Database
+        const conn = await dbConnect(); // Connect to Database
+        if (!conn) {
+            console.error('❌ Login API failed: No database connection.');
+            return NextResponse.json({ error: 'Database connection failed. Please try again later.' }, { status: 503 });
+        }
 
         const { phone, password, role } = await req.json();
 
@@ -46,8 +50,8 @@ export async function POST(req: Request) {
 
         cookies().set('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true, // Required for sameSite: 'none'
+            sameSite: 'none',
             maxAge: 365 * 24 * 60 * 60, // 365 days
             path: '/',
         });
