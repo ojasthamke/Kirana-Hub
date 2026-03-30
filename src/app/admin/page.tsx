@@ -65,14 +65,16 @@ export default function AdminPage() {
     const [orderFilter, setOrderFilter] = useState('All');
     const [paymentFilter, setPaymentFilter] = useState('All');
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-    const load = async () => {
-        setLoading(true); setLoadError(false);
+    const load = async (isBackground = false) => {
+        if (!isBackground) setLoading(true); 
+        setLoadError(false);
         try {
             const [ur, ar, or, pr, vr, lr] = await Promise.all([
                 apiFetch('/api/admin/users'),
                 apiFetch('/api/admin/agencies'),
-                apiFetch('/api/admin/orders'),
+                apiFetch(`/api/admin/orders?t=${Date.now()}`),
                 apiFetch('/api/admin/products'),
                 apiFetch('/api/admin/business-categories'),
                 apiFetch('/api/admin/locations')
@@ -84,11 +86,16 @@ export default function AdminPage() {
             setProducts(await pr.json());
             setVerticals(await vr.json());
             setLocations(await lr.json());
-        } catch { setLoadError(true); }
-        setLoading(false);
+            setLastUpdated(new Date());
+        } catch { if (!isBackground) setLoadError(true); }
+        if (!isBackground) setLoading(false);
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        load();
+        const timer = setInterval(() => load(true), 30000);
+        return () => clearInterval(timer);
+    }, []);
 
     // Fetch history
     useEffect(() => {
@@ -181,7 +188,7 @@ export default function AdminPage() {
             <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <h2 style={{ marginBottom: '1rem' }}>Connection Error</h2>
                 <p>Some data failed to load. Please try again.</p>
-                <button onClick={load} style={{ padding: '0.75rem 2rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, marginTop: '1.5rem', cursor: 'pointer' }}>Retry Now</button>
+                <button onClick={() => load()} style={{ padding: '0.75rem 2rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, marginTop: '1.5rem', cursor: 'pointer' }}>Retry Now</button>
             </div>
         </div>
     );
@@ -228,10 +235,16 @@ export default function AdminPage() {
             <div style={{ flex: 1, padding: '2.5rem', overflow: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif', color: '#0f172a' }}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</h1>
-                    <div style={{ position: 'relative', width: 320 }}>
-                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                        <input type="text" placeholder={`Search ${tab}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 3rem', borderRadius: 14, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.875rem', outline: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f0fdf4', color: '#16a34a', padding: '0.5rem 0.85rem', borderRadius: 12, fontSize: '0.75rem', fontWeight: 800, border: '1px solid #bbf7d0' }}>
+                            <div style={{ width: 6, height: 6, background: '#16a34a', borderRadius: '50%', boxShadow: '0 0 8px rgba(22,163,74,0.3)', animation: 'pulse 1.5s infinite' }} />
+                            LIVE SYNC • {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                        <div style={{ position: 'relative', width: 280 }}>
+                            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                            <input type="text" placeholder={`Search ${tab}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 3rem', borderRadius: 14, border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.875rem', outline: 'none' }} />
+                        </div>
                     </div>
                 </div>
 
