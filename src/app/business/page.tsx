@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Store, User, Phone, MapPin, Briefcase, ChevronRight, CheckCircle, Search } from 'lucide-react';
+import { Store, User, Phone, MapPin, Briefcase, ChevronRight, CheckCircle, Search, Lock } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 const BUSINESS_TYPES = [
@@ -22,6 +22,8 @@ export default function BusinessProfile() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [passForm, setPassForm] = useState({ current: '', new: '' });
+    const [passMsg, setPassMsg] = useState({ text: '', color: '' });
 
     const fetchProfile = async () => {
         try {
@@ -45,6 +47,26 @@ export default function BusinessProfile() {
             const data = await res.json();
             if (data.success) { setUser(data.user); }
         } catch { }
+        setSaving(false);
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true); setPassMsg({ text: '', color: '' });
+        try {
+            const res = await apiFetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: passForm.new, current_password: passForm.current })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPassMsg({ text: 'Password Updated Successfully!', color: '#16a34a' });
+                setPassForm({ current: '', new: '' });
+            } else {
+                setPassMsg({ text: data.error || 'Failed to update password', color: '#dc2626' });
+            }
+        } catch { setPassMsg({ text: 'Error connecting to server', color: '#dc2626' }); }
         setSaving(false);
     };
 
@@ -83,6 +105,7 @@ export default function BusinessProfile() {
                     
                     {/* Left Col: Details */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        {/* Profile Info */}
                         <div style={{ background: '#fff', borderRadius: 28, padding: '2rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
                             <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '2rem' }}>Identity Details</h2>
                             <div style={{ display: 'grid', gap: '2rem' }}>
@@ -90,6 +113,32 @@ export default function BusinessProfile() {
                                 <ProfileItem label="Phone Number" value={user.phone} icon={<Phone size={18} />} />
                                 <ProfileItem label="Physical Address" value={user.address} icon={<MapPin size={18} />} />
                             </div>
+                        </div>
+
+                        {/* Security */}
+                        <div style={{ background: '#fff', borderRadius: 28, padding: '2rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                            <h2 style={{ fontSize: '1.125rem', fontWeight: 800, marginBottom: '1.5rem' }}>Account Security</h2>
+                            <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>New Password</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <Lock size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#cbd5e1' }} />
+                                        <input 
+                                            type="password" 
+                                            placeholder="Enter new password" 
+                                            autoComplete="new-password"
+                                            value={passForm.new}
+                                            onChange={e => setPassForm(p => ({ ...p, new: e.target.value }))}
+                                            required 
+                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.875rem', borderRadius: 14, border: '1.5px solid #f1f5f9', background: '#f8fafc', fontSize: '0.875rem', outline: 'none' }}
+                                        />
+                                    </div>
+                                </div>
+                                {passMsg.text && <div style={{ fontSize: '0.8125rem', color: passMsg.color, fontWeight: 700 }}>{passMsg.text}</div>}
+                                <button type="submit" disabled={saving} style={{ padding: '0.875rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', marginTop: '0.5rem' }}>
+                                    {saving ? 'Processing...' : 'Update & Save to Device'}
+                                </button>
+                            </form>
                         </div>
                     </div>
 

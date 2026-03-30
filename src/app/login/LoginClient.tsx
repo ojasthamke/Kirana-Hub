@@ -129,6 +129,7 @@ export default function LoginClient() {
                                     style={{ width: '100%', paddingLeft: '2.75rem', paddingRight: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem', border: '1.5px solid var(--gray-200)', borderRadius: 8, fontSize: '0.9375rem', outline: 'none', boxSizing: 'border-box' }}
                                     type="password"
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     required

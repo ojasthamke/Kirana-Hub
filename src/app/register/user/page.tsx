@@ -85,36 +85,6 @@ export default function UserRegistration() {
                     {error && <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: 'var(--red-light)', borderRadius: 'var(--radius-sm)', color: 'var(--red)', fontSize: '0.875rem' }}>{error}</div>}
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                        {/* Business Type */}
-                        <div className="form-field">
-                            <label className="field-label" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', marginBottom: '0.625rem', display: 'block' }}>
-                                What type of business do you run?
-                            </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.5rem' }}>
-                                {BUSINESS_TYPES.map(bt => (
-                                    <button
-                                        key={bt.id}
-                                        type="button"
-                                        onClick={() => setForm(p => ({ ...p, business_type: bt.id }))}
-                                        style={{
-                                            padding: '0.625rem 0.5rem',
-                                            borderRadius: 10,
-                                            border: `1.5px solid ${form.business_type === bt.id ? '#0f172a' : '#e2e8f0'}`,
-                                            background: form.business_type === bt.id ? '#0f172a' : '#f8fafc',
-                                            color: form.business_type === bt.id ? '#fff' : '#475569',
-                                            cursor: 'pointer',
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
-                                            fontSize: '0.75rem', fontWeight: 600,
-                                            transition: 'all 0.15s',
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '1.25rem' }}>{bt.emoji}</span>
-                                        {bt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
                         <div className="form-field">
                             <label className="field-label">Full Name</label>
                             <div className="input-with-icon">
@@ -172,7 +142,7 @@ export default function UserRegistration() {
                             <label className="field-label">Password</label>
                             <div className="input-with-icon">
                                 <span className="input-icon"><Lock size={18} /></span>
-                                <input className="input" type="password" placeholder="Create password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required />
+                                <input className="input" type="password" placeholder="Create password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} autoComplete="new-password" required />
                             </div>
                         </div>
                         <button className="btn btn-primary btn-lg w-full" type="submit" disabled={loading}>
