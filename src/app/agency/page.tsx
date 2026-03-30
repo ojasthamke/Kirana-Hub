@@ -185,6 +185,30 @@ export default function AgencyPage() {
   const filteredOrders = orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || (o.user_id?.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredProducts = products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  if (loading) return (
+    <div style={{
+      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
+    }}>
+      <div style={{
+        width: 64, height: 64, background: '#eff6ff', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 30px -5px rgba(37, 99, 235, 0.1)', animation: 'pulse 1.5s infinite ease-in-out'
+      }}>
+        <TrendingUp size={32} color="#2563eb" style={{ animation: 'bounce 0.8s infinite alternate' }} />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Agency Panel</p>
+        <div style={{ height: 4, width: 140, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
+          <div style={{ height: '100%', width: '40%', background: '#2563eb', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); opacity: 0.8; } }
+        @keyframes bounce { from { transform: translateY(2px); } to { transform: translateY(-4px); } }
+        @keyframes loadProgress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      `}</style>
+    </div>
+  );
+
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.25rem' }}>
