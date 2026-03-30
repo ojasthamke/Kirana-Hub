@@ -39,8 +39,14 @@ export function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Check for auth token cookie
-    const token = request.cookies.get('token')?.value;
+    // Check for auth token in cookie OR authorization header (for mobile)
+    let token = request.cookies.get('token')?.value;
+    if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        }
+    }
 
     // Redirect logged-in users away from login/register
     if (token && PUBLIC_PATHS.some(p => pathname.startsWith(p))) {

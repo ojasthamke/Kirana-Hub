@@ -62,6 +62,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
+            token, // Returning token for mobile persistence
             user: { name: account.name, role: account.role }
         });
     } catch (error: any) {

@@ -16,19 +16,7 @@ export default function LoginClient() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [serverUrl, setServerUrl] = useState('https://kiranahub.vercel.app');
-
-    // Persistence: Remember the user's manual IP on the phone
-    useEffect(() => {
-        const saved = localStorage.getItem('debug_server_url');
-        if (saved) setServerUrl(saved);
-        else if (process.env.NEXT_PUBLIC_API_URL) setServerUrl(process.env.NEXT_PUBLIC_API_URL);
-    }, []);
-
-    const updateUrl = (url: string) => {
-        setServerUrl(url);
-        localStorage.setItem('debug_server_url', url);
-    };
+    const serverUrl = 'https://kiranahub.vercel.app'; // Production server
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,7 +39,14 @@ export default function LoginClient() {
                 return;
             }
             
-            if (data.success) {
+            if (data.success && data.token) {
+                // Bridge: Manually set the cookie in the phone's webview
+                // This ensures the page-level navigation (GET) can see the session
+                document.cookie = `token=${data.token}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`;
+                
+                // Store in localStorage as a redundant backup for future mobile calls
+                localStorage.setItem('auth_token', data.token);
+
                 // Use hard navigation so the cookie is fully sent on the next request
                 if (role === 'admin') window.location.href = '/admin';
                 else if (role === 'vendor') window.location.href = '/agency';
@@ -161,18 +156,6 @@ export default function LoginClient() {
                             }
                         </div>
                     )}
-
-                    {/* DEBUG: Backend URL Switcher */}
-                    <div style={{ marginTop: '2rem', padding: '1rem', borderTop: '1px dashed var(--gray-200)', opacity: 0.6 }}>
-                        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Debug: Server IP (Local Testing)</p>
-                        <input 
-                            style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', border: '1px solid var(--gray-200)', borderRadius: 4 }}
-                            value={serverUrl} 
-                            onChange={(e) => updateUrl(e.target.value)} 
-                            placeholder="http://10.148.111.4:3000"
-                        />
-                        <p style={{ fontSize: '0.6rem', marginTop: '0.3rem', color: 'var(--gray-400)' }}>Your Laptop IP: 10.148.111.4</p>
-                    </div>
                 </div>
             </div>
         </div>
