@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Phone, Lock, MapPin, ChevronRight, CheckCircle, Store } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 const BUSINESS_TYPES = [
     { id: 'Kirana Store', emoji: '🏪', label: 'Kirana Store' },
@@ -29,7 +30,7 @@ export default function UserRegistration() {
         e.preventDefault();
         setLoading(true); setError('');
         try {
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/register', {
+            const res = await apiFetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...form, store_address: form.address, role: 'user' })

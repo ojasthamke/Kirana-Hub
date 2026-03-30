@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ShoppingBag, Trash2, ChevronRight, CheckCircle, Package, ShoppingCart, CreditCard, Banknote, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
+import { apiFetch } from '@/lib/api';
 
 function PaymentModal({ total, onConfirm, onClose }: { total: number; onConfirm: (method: 'Cash' | 'Online') => void; onClose: () => void }) {
     const [method, setMethod] = useState<'Cash' | 'Online'>('Cash');
@@ -70,7 +71,7 @@ export default function CartPage() {
         setCheckingOut(true);
         setError('');
         try {
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders/checkout', {
+            const res = await apiFetch('/api/orders/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

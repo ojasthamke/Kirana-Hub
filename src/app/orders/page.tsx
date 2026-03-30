@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, Package, Loader2, Calendar, Banknote, CreditCard, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 interface Order {
     _id: string;
@@ -40,7 +41,7 @@ export default function UserOrders() {
     const loadOrders = async () => {
         setError('');
         try {
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders');
+            const res = await apiFetch('/api/orders');
             if (res.status === 401) {
                 setError('Please login to view your orders.');
                 setLoading(false);

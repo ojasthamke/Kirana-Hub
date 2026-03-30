@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Package, ShoppingBag, TrendingUp, Plus, Edit2, Trash2, X, RefreshCw, Search, Banknote, CreditCard, Eye, Layers } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface Variant { variant_name: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: { _id: string; name: string; phone: string; address: string } | null; }
@@ -68,9 +69,9 @@ export default function AgencyPage() {
   const load = useCallback(async () => {
     try {
       const [or, pr, wr] = await Promise.all([
-        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/orders').catch(() => null),
-        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/products').catch(() => null),
-        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/wallet').catch(() => null),
+        apiFetch('/api/orders').catch(() => null),
+        apiFetch('/api/agency/products').catch(() => null),
+        apiFetch('/api/agency/wallet').catch(() => null),
       ]);
       if (or?.status === 401) { window.location.href = '/login'; return; }
       const [od, pd, wd] = await Promise.all([
@@ -102,7 +103,7 @@ export default function AgencyPage() {
   }, [selectedOrder, orders]);
 
   const updateOrder = async (id: string, updates: any) => {
-    await fetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+    await apiFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
     load();
   };
 
@@ -123,7 +124,7 @@ export default function AgencyPage() {
       const url = '/api/agency/products';
       const method = modal === 'add' ? 'POST' : 'PATCH';
       const payload = modal === 'edit' ? { productId: sel!._id, ...body } : body;
-      const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const r = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const d = await r.json();
       if (!d.success) { setErr(d.error || 'Failed'); setSaving(false); return; }
       setModal(null); setPf(emptyP); load();
@@ -133,7 +134,7 @@ export default function AgencyPage() {
 
   const deleteProd = async (productId: string) => {
     if (!confirm('Delete this product?')) return;
-    await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
+    await apiFetch('/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
     load();
   };
 

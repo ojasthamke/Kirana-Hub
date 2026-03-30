@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { apiFetch } from '@/lib/api';
 
 interface Variant {
     variant_name: string;
@@ -67,7 +68,7 @@ export default function Home() {
 
     const loadProducts = () => {
         setLoading(true); setFetchError(false);
-        fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/products').then(r => r.json()).then(d => {
+        apiFetch('/api/products').then(r => r.json()).then(d => {
             if (Array.isArray(d)) setProducts(d); else setFetchError(true);
             setLoading(false);
         }).catch(() => { setFetchError(true); setLoading(false); });

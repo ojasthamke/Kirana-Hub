@@ -39,10 +39,7 @@ jobs:
       - name: Build Web Assets
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          IS_CAPACITOR: 'true'
-        run: |
-          node fix-api-urls.js
-          npm run build
+        run: npm run build
 
       - name: Restore API Folder
         run: |

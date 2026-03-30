@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface User { _id: string; name: string; phone: string; address: string; role: 'user' | 'admin' | 'vendor'; }
 interface Vendor { _id: string; name: string; store_name: string; phone: string; address: string; }
@@ -60,10 +61,10 @@ export default function AdminPage() {
         setLoading(true); setLoadError(false);
         try {
             const [ur, ar, or, pr] = await Promise.all([
-                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/users'),
-                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/agencies'),
-                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/orders'),
-                fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/products')
+                apiFetch('/api/admin/users'),
+                apiFetch('/api/admin/agencies'),
+                apiFetch('/api/admin/orders'),
+                apiFetch('/api/admin/products')
             ]);
             if (ur.status === 401) { window.location.href = '/login'; return; }
             setUsers(await ur.json());
@@ -85,13 +86,13 @@ export default function AdminPage() {
     }, [selected, modal, orders]);
 
     const updateOrder = async (orderId: string, updates: any) => {
-        await fetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+        await apiFetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
         load();
     };
 
     const deleteItem = async (type: string, id: string) => {
         if (!confirm('Are you sure?')) return;
-        await fetch(`/api/admin/${type}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [`${type.slice(0, -1)}Id`]: id }) });
+        await apiFetch(`/api/admin/${type}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [`${type.slice(0, -1)}Id`]: id }) });
         load();
     };
 
@@ -559,7 +560,7 @@ export default function AdminPage() {
                         const url = '/api/admin/products';
                         const method = selected ? 'PATCH' : 'POST';
                         const payload = selected ? { productId: selected._id, ...body } : body;
-                        await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         setModal(null); load();
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -610,7 +611,7 @@ export default function AdminPage() {
                         const url = '/api/admin/agencies';
                         const method = selected ? 'PATCH' : 'POST';
                         const payload = selected ? { vendorId: selected._id, ...body } : body;
-                        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        const res = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         if (res.ok) { setModal(null); load(); } else { alert('Error saving agency'); }
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <SI label="Agency Head Name"><Inp name="name" defaultValue={selected?.name} required /></SI>

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard } from 'lucide-react';
 import { TokenPayload } from '../../lib/auth';
 import { useCart } from '@/context/CartContext';
+import { apiFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 const IS_LOCAL = process.env.NEXT_PUBLIC_LOCAL_MODE === 'true';
@@ -18,7 +19,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
 
     useEffect(() => {
         if (session && session.role === 'user') {
-            fetch('/api/orders/unpaid-total')
+            apiFetch('/api/orders/unpaid-total')
                 .then(r => r.json())
                 .then(d => { if (typeof d.totalUnpaid === 'number') setUnpaidAmount(d.totalUnpaid); })
                 .catch(() => { });
@@ -26,7 +27,7 @@ export default function Navbar({ session }: { session: TokenPayload | null }) {
     }, []);
 
     const handleLogout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await apiFetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
         router.refresh();
     };

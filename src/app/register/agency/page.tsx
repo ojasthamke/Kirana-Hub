@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Store, MapPin, Hash, Phone, Mail, Lock, ChevronRight, CheckCircle } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 export default function VendorRegistration() {
     const router = useRouter();
@@ -21,7 +22,7 @@ export default function VendorRegistration() {
     const handleSubmit = async () => {
         setLoading(true); setError('');
         try {
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/register', {
+            const res = await apiFetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...form, role: 'vendor' })
