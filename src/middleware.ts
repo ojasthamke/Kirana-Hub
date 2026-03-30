@@ -7,43 +7,35 @@ const PUBLIC_PATHS = ['/login', '/register/user', '/register/agency'];
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Allow API routes, static files, Next internals to pass through freely
+    // --- SENIOR CORS HANDLING ---
+    // Extract origin for secure CORS with credentials
+    const origin = request.headers.get('origin');
+    
+    // Check if it's an API route
+    const isApiRoute = pathname.startsWith('/api/');
+
+    if (isApiRoute) {
+        // Handle preflight (OPTIONS) requests
+        if (request.method === 'OPTIONS') {
+            const res = new NextResponse(null, { status: 200 });
+            res.headers.set('Access-Control-Allow-Origin', origin || '*');
+            res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+            res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            res.headers.set('Access-Control-Allow-Credentials', 'true');
+            res.headers.set('Access-Control-Max-Age', '86400');
+            return res;
+        }
+    }
+
+    // --- STANDARD MIDDLEWARE LOGIC ---
+
+    // Allow static files, Next internals to pass through freely
     if (
-        pathname.startsWith('/api/') ||
         pathname.startsWith('/_next/') ||
         pathname.startsWith('/favicon') ||
         pathname.startsWith('/icons') ||
         pathname.startsWith('/images')
     ) {
-        // Add CORS for API routes
-        if (pathname.startsWith('/api/')) {
-            const origin = request.headers.get('origin');
-            const allowedOrigins = [
-                'http://localhost',
-                'capacitor://localhost',
-                'http://localhost:3000'
-            ];
-            
-            // Determine if the origin should be allowed
-            const isAllowed = !origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
-            const responseOrigin = isAllowed ? (origin || '*') : '*';
-
-            if (request.method === 'OPTIONS') {
-                const res = new NextResponse(null, { status: 204 });
-                res.headers.set('Access-Control-Allow-Origin', responseOrigin);
-                res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-                res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-                res.headers.set('Access-Control-Allow-Credentials', 'true');
-                return res;
-            }
-
-            const response = NextResponse.next();
-            response.headers.set('Access-Control-Allow-Origin', responseOrigin);
-            response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-            response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-            response.headers.set('Access-Control-Allow-Credentials', 'true');
-            return response;
-        }
         return NextResponse.next();
     }
 
@@ -55,9 +47,14 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // Allow public pages for unauthenticated users
-    if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
-        return NextResponse.next();
+    // Allow public paths and API routes to proceed
+    if (isApiRoute || PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+        const response = NextResponse.next();
+        if (isApiRoute) {
+            response.headers.set('Access-Control-Allow-Origin', origin || '*');
+            response.headers.set('Access-Control-Allow-Credentials', 'true');
+        }
+        return response;
     }
 
     if (!token) {
