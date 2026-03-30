@@ -171,6 +171,29 @@ export default function UserOrders() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Product List with small photos */}
+                                <div style={{ borderTop: '1.5px dashed #f1f5f9', padding: '1rem 1.25rem', background: '#fcfcfd' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Ordered Items</div>
+                                    <div style={{ display: 'grid', gap: '0.6rem' }}>
+                                        {o.products?.map((p: any, i: number) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                    {p.image_url ? (
+                                                        <img src={p.image_url} alt={p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', color: '#cbd5e1' }}>📦</div>
+                                                    )}
+                                                    <div>
+                                                        <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#1e293b' }}>{p.name}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>₹{p.price} x {p.quantity}</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>₹{p.total}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

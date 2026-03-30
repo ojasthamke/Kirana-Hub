@@ -50,9 +50,9 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                 <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 1rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
                     {/* Left: Logo */}
-                    <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 800, color: 'var(--gray-900)', textDecoration: 'none', flexShrink: 0 }}>
-                        <Store size={18} color="var(--accent)" strokeWidth={2.5} />
-                        KiranaHub
+                    <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', flexShrink: 0 }}>
+                        <img src="/logo.png" alt="KiranaHub Logo" style={{ height: 42, width: 'auto', objectFit: 'contain' }} />
+                        <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 900, color: 'var(--gray-900)', letterSpacing: '-0.02em' }}>KiranaHub</span>
                     </Link>
 
                     {/* Right: User + Options */}

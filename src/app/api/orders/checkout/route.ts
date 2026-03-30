@@ -55,6 +55,7 @@ export async function POST(req: Request) {
                 product_id: dbProduct._id,
                 variantName: item.variantName,
                 name: name,
+                image_url: dbProduct.image_url || '',
                 price: price,
                 quantity: item.quantity,
                 total: lineTotal

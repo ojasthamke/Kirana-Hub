@@ -6,7 +6,7 @@ import { apiFetch } from '@/lib/api';
 interface User { _id: string; name: string; phone: string; address: string; role: 'user' | 'admin' | 'vendor'; }
 interface Vendor { _id: string; name: string; store_name: string; phone: string; address: string; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: User | null; vendor_id?: Vendor | null; }
-interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id?: Vendor | null; }
+interface Product { _id: string; name_en: string; name_hi: string; image_url?: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id?: Vendor | null; }
 
 const ORDER_STATUSES = ['Pending', 'Accepted', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
 const PAYMENT_STATUSES = ['Unpaid', 'Paid', 'Pending Approval'];
@@ -97,12 +97,26 @@ export default function AdminPage() {
     };
 
     if (loading) return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-            <div style={{ textAlign: 'center' }}>
-                <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTopColor: '#0f172a', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
-                <p style={{ fontWeight: 600, color: '#64748b' }}>Loading Kirana Hub Admin...</p>
+        <div style={{
+            height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
+        }}>
+            <div style={{
+                width: 64, height: 64, background: '#f0fdf4', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 30px -5px rgba(22, 163, 74, 0.1)', animation: 'pulse 1.5s infinite ease-in-out'
+            }}>
+                <Package size={32} color="#16a34a" style={{ animation: 'bounce 0.8s infinite alternate' }} />
             </div>
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <div style={{ textAlign: 'center' }}>
+                <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Admin</p>
+                <div style={{ height: 4, width: 120, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
+                    <div style={{ height: '100%', width: '40%', background: '#16a34a', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
+                </div>
+            </div>
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); opacity: 0.8; } }
+                @keyframes bounce { from { transform: translateY(2px); } to { transform: translateY(-4px); } }
+                @keyframes loadProgress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+            `}</style>
         </div>
     );
 
@@ -121,7 +135,7 @@ export default function AdminPage() {
             {/* Sidebar */}
             <div style={{ width: 280, background: '#0f172a', color: '#fff', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', padding: '0 0.5rem' }}>
-                    <div style={{ background: '#16a34a', padding: '0.5rem', borderRadius: 10 }}><Store size={20} color="#fff" /></div>
+                    <img src="/logo.png" alt="KiranaHub" style={{ width: 40, height: 40, borderRadius: 10, background: '#fff', padding: 4 }} />
                     <span style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'Outfit, sans-serif' }}>Kirana Hub</span>
                 </div>
 
@@ -368,8 +382,17 @@ export default function AdminPage() {
                                         {products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
                                             <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                 <td style={{ padding: '1rem' }}>
-                                                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        {p.image_url ? (
+                                                            <img src={p.image_url} alt={p.name_en} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                                        ) : (
+                                                            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>No Img</div>
+                                                        )}
+                                                        <div>
+                                                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td style={{ padding: '1rem', color: '#64748b' }}>{p.category}</td>
                                                 <td style={{ padding: '1rem', fontSize: '0.8125rem', color: '#475569' }}>{p.vendor_id?.store_name || 'System'}</td>
@@ -508,7 +531,16 @@ export default function AdminPage() {
                                     <tbody>
                                         {selected.products?.map((p: any, i: number) => (
                                             <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>{p.name_en || 'Product'}</td>
+                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        {p.image_url ? (
+                                                            <img src={p.image_url} alt={p.name_en} style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'contain' }} />
+                                                        ) : (
+                                                            <div style={{ width: 24, height: 24, borderRadius: 4, background: '#f1f5f9' }} />
+                                                        )}
+                                                        <span>{p.name_en || 'Product'}</span>
+                                                    </div>
+                                                </td>
                                                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>{p.quantity}</td>
                                                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700 }}>₹{p.total}</td>
                                             </tr>
@@ -555,7 +587,7 @@ export default function AdminPage() {
                             name_en: f.get('name_en'), name_hi: f.get('name_hi'), category: f.get('category'),
                             price: Number(f.get('price')), stock: Number(f.get('stock')), unit: f.get('unit'),
                             min_qty: Number(f.get('min_qty')), status: f.get('status'), offer: f.get('offer'),
-                            vendor_id: f.get('vendor_id') || undefined
+                            image_url: f.get('image_url'), vendor_id: f.get('vendor_id') || undefined
                         };
                         const url = '/api/admin/products';
                         const method = selected ? 'PATCH' : 'POST';
@@ -580,6 +612,7 @@ export default function AdminPage() {
                                 </select>
                             </SI>
                         </div>
+                        <SI label="Product Image URL"><Inp name="image_url" defaultValue={selected?.image_url} placeholder="https://example.com/photo.jpg" /></SI>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                             <SI label="Price (₹)"><Inp name="price" type="number" defaultValue={selected?.price} required /></SI>
                             <SI label="Stock"><Inp name="stock" type="number" defaultValue={selected?.stock} required /></SI>
