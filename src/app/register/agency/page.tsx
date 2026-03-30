@@ -13,7 +13,8 @@ export default function VendorRegistration() {
     const [error, setError] = useState('');
     const [form, setForm] = useState({
         name: '', store_name: '', store_address: '', gst_number: '',
-        turnover: '', phone: '', alternate_phone: '', email: '', password: ''
+        turnover: '', phone: '', alternate_phone: '', email: '', password: '',
+        state: 'Maharashtra', city: 'Yavatmal'
     });
 
     const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -96,16 +97,38 @@ export default function VendorRegistration() {
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <InputField label="Store Address" icon={<MapPin size={17} />} type="text" placeholder="Full shop address" value={form.store_address} onChange={set('store_address')} />
                                     </div>
-                                    <InputField label="GST Number" icon={<Hash size={17} />} type="text" placeholder="22AAAAA0000A1Z5" value={form.gst_number} onChange={set('gst_number')} />
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                                        <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Approx Turnover</label>
-                                        <select
-                                            value={form.turnover} onChange={set('turnover')}
-                                            style={{ padding: '0.75rem 2rem 0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: form.turnover ? 'var(--gray-900)' : 'var(--gray-400)', outline: 'none', appearance: 'none', background: "var(--white) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 0.875rem center", width: '100%' }}
-                                        >
-                                            <option value="" disabled>Select range</option>
-                                            <option>Under 10L</option><option>10L – 50L</option><option>50L – 1Cr</option><option>1Cr+</option>
-                                        </select>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                            <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--gray-500)' }}>State</label>
+                                            <select
+                                                value={form.state} onChange={set('state')}
+                                                style={{ padding: '0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: 'var(--gray-900)', outline: 'none', background: 'var(--white)', width: '100%' }}
+                                            >
+                                                <option value="Maharashtra">Maharashtra</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                            <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--gray-500)' }}>City</label>
+                                            <select
+                                                value={form.city} onChange={set('city')}
+                                                style={{ padding: '0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: 'var(--gray-900)', outline: 'none', background: 'var(--white)', width: '100%' }}
+                                            >
+                                                <option value="Yavatmal">Yavatmal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                        <InputField label="GST Number" icon={<Hash size={17} />} type="text" placeholder="22AAAAA0000A1Z5" value={form.gst_number} onChange={set('gst_number')} />
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                                            <label style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Approx Turnover</label>
+                                            <select
+                                                value={form.turnover} onChange={set('turnover')}
+                                                style={{ padding: '0.75rem 2rem 0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: form.turnover ? 'var(--gray-900)' : 'var(--gray-400)', outline: 'none', appearance: 'none', background: "var(--white) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\") no-repeat right 0.875rem center", width: '100%' }}
+                                            >
+                                                <option value="" disabled>Select range</option>
+                                                <option>Under 10L</option><option>10L – 50L</option><option>50L – 1Cr</option><option>1Cr+</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

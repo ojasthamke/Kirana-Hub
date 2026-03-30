@@ -11,6 +11,8 @@ const VendorSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     status: { type: String, enum: ['pending', 'approved', 'blocked'], default: 'pending' },
+    state: { type: String, default: 'Maharashtra' },
+    city: { type: String, default: 'Yavatmal' },
     role: { type: String, default: 'vendor' },
     business_segments: [{ type: String }],
 }, { timestamps: true });

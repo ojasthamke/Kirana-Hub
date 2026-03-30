@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye, LayoutGrid } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
-interface User { _id: string; name: string; phone: string; address: string; role: 'user' | 'admin' | 'vendor'; business_type?: string; }
-interface Vendor { _id: string; name: string; store_name: string; phone: string; address: string; business_segments?: string[]; }
+interface User { _id: string; name: string; phone: string; address: string; state: string; city: string; role: 'user' | 'admin' | 'vendor'; business_type?: string; }
+interface Vendor { _id: string; name: string; store_name: string; phone: string; store_address?: string; address?: string; state: string; city: string; business_segments?: string[]; gst_number?: string; email?: string; turnover?: string; }
 interface BusinessVertical { _id: string; name: string; icon: string; description?: string; is_active: boolean; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: User | null; vendor_id?: Vendor | null; }
 interface Product { _id: string; name_en: string; name_hi: string; image_url?: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id?: Vendor | null; }
@@ -58,6 +58,7 @@ export default function AdminPage() {
     const [userHistory, setUserHistory] = useState<Order[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loadError, setLoadError] = useState(false);
+    const [selectedCity, setSelectedCity] = useState('Yavatmal');
 
     const load = async () => {
         setLoading(true); setLoadError(false);
@@ -434,30 +435,62 @@ export default function AdminPage() {
                 {/* ── USERS (Shop Owners) ── */}
                 {tab === 'users' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
-                        <h2 style={{ fontSize: '1.125rem', marginBottom: '1.25rem' }}>Registered Shop Owners</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h2 style={{ fontSize: '1.125rem' }}>Registered Shop Owners</h2>
+                            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
+                                {['Yavatmal', 'All'].map(c => (
+                                    <button 
+                                        key={c}
+                                        onClick={() => setSelectedCity(c)}
+                                        style={{ 
+                                            padding: '0.4rem 1rem', 
+                                            borderRadius: 8, 
+                                            border: 'none', 
+                                            fontSize: '0.75rem', 
+                                            fontWeight: 700, 
+                                            cursor: 'pointer',
+                                            background: selectedCity === c ? '#fff' : 'transparent',
+                                            boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                            color: selectedCity === c ? '#0f172a' : '#64748b'
+                                        }}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
-                                            {['Name', 'Phone', 'Address', 'Actions'].map(h => (
+                                            {['Name', 'Phone', 'City / State', 'Address', 'Actions'].map(h => (
                                                 <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
-                                            <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{u.name}</td>
-                                                <td style={{ padding: '1rem', color: '#475569' }}>{u.phone}</td>
-                                                <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{u.address}</td>
-                                                <td style={{ padding: '1rem' }}>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <button onClick={() => deleteItem('users', u._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {users
+                                            .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            .filter(u => selectedCity === 'All' || u.city === selectedCity)
+                                            .map(u => (
+                                                <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{u.name}</td>
+                                                    <td style={{ padding: '1rem', color: '#475569' }}>{u.phone}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ fontWeight: 600 }}>{u.city || 'Yavatmal'}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{u.state || 'Maharashtra'}</div>
+                                                    </td>
+                                                    <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{u.address}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button onClick={() => { setSelected(u); setModal('user' as any); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                            <button onClick={() => deleteItem('users', u._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -470,33 +503,63 @@ export default function AdminPage() {
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                             <h2 style={{ fontSize: '1.125rem' }}>Wholesale Agencies</h2>
-                            <button onClick={() => { setSelected(null); setModal('vendor'); }} style={{ padding: '0.6rem 1.25rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Plus size={16} /> Add Agency</button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
+                                    {['Yavatmal', 'All'].map(c => (
+                                        <button 
+                                            key={c}
+                                            onClick={() => setSelectedCity(c)}
+                                            style={{ 
+                                                padding: '0.4rem 1rem', 
+                                                borderRadius: 8, 
+                                                border: 'none', 
+                                                fontSize: '0.75rem', 
+                                                fontWeight: 700, 
+                                                cursor: 'pointer',
+                                                background: selectedCity === c ? '#fff' : 'transparent',
+                                                boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                                color: selectedCity === c ? '#0f172a' : '#64748b'
+                                            }}
+                                        >
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button onClick={() => { setSelected(null); setModal('vendor'); }} style={{ padding: '0.6rem 1.25rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Plus size={16} /> Add Agency</button>
+                            </div>
                         </div>
                         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
-                                            {['Store Name', 'Owner', 'Phone', 'Address', 'Actions'].map(h => (
+                                            {['Store Name', 'Owner', 'City / State', 'Phone', 'Address', 'Actions'].map(h => (
                                                 <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {agencies.filter(a => a.store_name.toLowerCase().includes(searchQuery.toLowerCase())).map(a => (
-                                            <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>{a.store_name}</td>
-                                                <td style={{ padding: '1rem', color: '#475569' }}>{a.name}</td>
-                                                <td style={{ padding: '1rem', color: '#475569' }}>{a.phone}</td>
-                                                <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{a.address || 'N/A'}</td>
-                                                <td style={{ padding: '1rem' }}>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <button onClick={() => { setSelected(a); setModal('vendor'); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                                        <button onClick={() => deleteItem('agencies', a._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {agencies
+                                            .filter(a => a.store_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            .filter(a => selectedCity === 'All' || a.city === selectedCity)
+                                            .map(a => (
+                                                <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>{a.store_name}</td>
+                                                    <td style={{ padding: '1rem', color: '#475569' }}>{a.name}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ fontWeight: 600 }}>{a.city || 'Yavatmal'}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{a.state || 'Maharashtra'}</div>
+                                                    </td>
+                                                    <td style={{ padding: '1rem', color: '#475569' }}>{a.phone}</td>
+                                                    <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{a.store_address || a.address || 'N/A'}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button onClick={() => { setSelected(a); setModal('vendor'); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                            <button onClick={() => deleteItem('agencies', a._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -697,6 +760,46 @@ export default function AdminPage() {
                 </Modal>
             )}
 
+            {/* ── MODAL: User (Edit) ── */}
+            {modal === 'user' && selected && (
+                <Modal title="Edit Shop Owner" onClose={() => setModal(null)}>
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        const body = { 
+                            name: f.get('name'), 
+                            phone: f.get('phone'), 
+                            address: f.get('address'),
+                            state: f.get('state'),
+                            city: f.get('city')
+                        };
+                        const res = await apiFetch('/api/admin/users', { 
+                            method: 'PATCH', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ userId: selected._id, ...body }) 
+                        });
+                        if (res.ok) { setModal(null); load(); } else { alert('Error updating user'); }
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <SI label="Full Name"><Inp name="name" defaultValue={selected.name} required /></SI>
+                        <SI label="Phone Number"><Inp name="phone" defaultValue={selected.phone} required /></SI>
+                        <SI label="Address"><Inp name="address" defaultValue={selected.address} required /></SI>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <SI label="State">
+                                <select name="state" defaultValue={selected.state || 'Maharashtra'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    <option value="Maharashtra">Maharashtra</option>
+                                </select>
+                            </SI>
+                            <SI label="City">
+                                <select name="city" defaultValue={selected.city || 'Yavatmal'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    <option value="Yavatmal">Yavatmal</option>
+                                </select>
+                            </SI>
+                        </div>
+                        <button type="submit" style={{ padding: '0.875rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>Update Shop Owner</button>
+                    </form>
+                </Modal>
+            )}
+
             {/* ── MODAL: Agency (Add/Edit) ── */}
             {modal === 'vendor' && (
                 <Modal title={selected ? 'Edit Agency' : 'Register New Wholesale Agency'} onClose={() => setModal(null)}>
@@ -714,6 +817,20 @@ export default function AdminPage() {
                         <SI label="Agency Head Name"><Inp name="name" defaultValue={selected?.name} required /></SI>
                         <SI label="Store/Agency Name"><Inp name="store_name" defaultValue={selected?.store_name} required /></SI>
                         <SI label="Full Address"><Inp name="store_address" defaultValue={selected?.store_address || selected?.address} required /></SI>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <SI label="State">
+                                <select name="state" defaultValue={selected?.state || 'Maharashtra'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    <option value="Maharashtra">Maharashtra</option>
+                                </select>
+                            </SI>
+                            <SI label="City">
+                                <select name="city" defaultValue={selected?.city || 'Yavatmal'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    <option value="Yavatmal">Yavatmal</option>
+                                </select>
+                            </SI>
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <SI label="GST Number"><Inp name="gst_number" defaultValue={selected?.gst_number} required /></SI>
                             <SI label="Turnover"><Inp name="turnover" defaultValue={selected?.turnover} placeholder="e.g. 10 Cr+" /></SI>

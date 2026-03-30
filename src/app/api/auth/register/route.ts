@@ -10,7 +10,8 @@ export async function POST(req: Request) {
 
         const {
             name, store_name, store_address, gst_number,
-            phone, alternate_phone, email, password, role, business_type
+            phone, alternate_phone, email, password, role, business_type,
+            state, city
         } = await req.json();
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,7 +33,9 @@ export async function POST(req: Request) {
                 alternate_phone,
                 email,
                 password: hashedPassword,
-                status: 'pending' // Admin must approve
+                status: 'pending', // Admin must approve
+                state: state || 'Maharashtra',
+                city: city || 'Yavatmal'
             });
         } else {
             // Check for existing user in Local MongoDB
@@ -44,6 +47,8 @@ export async function POST(req: Request) {
                 name,
                 phone,
                 address: store_address || 'Not Provided',
+                state: state || 'Maharashtra',
+                city: city || 'Yavatmal',
                 business_type: business_type || 'Kirana Store',
                 password: hashedPassword,
                 role: 'user'

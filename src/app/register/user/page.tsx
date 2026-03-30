@@ -21,7 +21,8 @@ const BUSINESS_TYPES = [
 
 export default function UserRegistration() {
     const router = useRouter();
-    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store' });
+    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store', state: 'Maharashtra', city: 'Yavatmal' });
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -119,6 +120,31 @@ export default function UserRegistration() {
                             <div className="input-with-icon">
                                 <span className="input-icon"><MapPin size={18} /></span>
                                 <input className="input" type="text" placeholder="Delivery address" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} required />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className="form-field">
+                                <label className="field-label">State</label>
+                                <select 
+                                    className="input" 
+                                    value={form.state} 
+                                    onChange={e => setForm(p => ({ ...p, state: e.target.value }))}
+                                    style={{ appearance: 'none', background: '#fff' }}
+                                >
+                                    <option value="Maharashtra">Maharashtra</option>
+                                </select>
+                            </div>
+                            <div className="form-field">
+                                <label className="field-label">City</label>
+                                <select 
+                                    className="input" 
+                                    value={form.city} 
+                                    onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                                    style={{ appearance: 'none', background: '#fff' }}
+                                >
+                                    <option value="Yavatmal">Yavatmal</option>
+                                </select>
                             </div>
                         </div>
                         <div className="form-field">
