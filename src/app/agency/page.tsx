@@ -57,6 +57,7 @@ export default function AgencyPage() {
   const [sel, setSel] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [userHistory, setUserHistory] = useState<Order[]>([]);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,7 +94,11 @@ export default function AgencyPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { 
+    load();
+    const t = setInterval(() => load(), 30000); // 30s auto-refresh
+    return () => clearInterval(t);
+  }, [load]);
 
   useEffect(() => {
     if (selectedOrder?.user_id?._id) {
@@ -103,8 +108,20 @@ export default function AgencyPage() {
   }, [selectedOrder, orders]);
 
   const updateOrder = async (id: string, updates: any) => {
-    await apiFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
-    load();
+    setUpdatingId(id);
+    try {
+        const res = await apiFetch(`/api/orders/${id}`, { 
+            method: 'PATCH', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(updates) 
+        });
+        if (res.ok) await load();
+        else {
+            const d = await res.json();
+            alert(`Update Failed: ${d.error || 'Check permissions'}`);
+        }
+    } catch { alert('Network Error updating order'); }
+    setUpdatingId(null);
   };
 
   const saveProduct = async () => {
@@ -216,12 +233,18 @@ export default function AgencyPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a', marginBottom: '0.25rem' }}>Agency Dashboard</p>
-            <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif' }}>My Agency</h1>
-            <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Auto-refreshes every 20s • Manage products, fulfil orders, track earnings.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a' }}>Agency Dashboard</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f0fdf4', color: '#16a34a', padding: '0.2rem 0.5rem', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, border: '1px solid #bbf7d0' }}>
+                    <div style={{ width: 5, height: 5, background: '#16a34a', borderRadius: '50%', boxShadow: '0 0 6px #16a34a', animation: 'pulse 1.5s infinite' }} />
+                    LIVE SYNC
+                </div>
+            </div>
+            <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif', fontWeight: 900 }}>My Agency Control</h1>
+            <p style={{ color: '#64748b', fontSize: '0.9375rem', fontWeight: 600 }}>Manage products, fulfil orders, and track your wholesale earnings instantly.</p>
           </div>
-          <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', border: '1.5px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: '0.875rem', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
-            <RefreshCw size={15} /> Refresh Now
+          <button onClick={() => load()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: '0.875rem', fontWeight: 700, color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <RefreshCw size={15} className={loading && !updatingId ? 'spin' : ''} /> {loading && !updatingId ? 'Syncing...' : 'Refresh Dashboard'}
           </button>
         </div>
 
@@ -331,40 +354,64 @@ export default function AgencyPage() {
 
         {tab === 'orders' && (
             /* ... previous orders table code ... */
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)' }}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 1000 }}>
                     <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Customer', 'Order ID', 'Items', 'Amount', 'Pay Type', 'Pay Status', 'Status', 'Date', 'View'].map(h => (
-                        <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
+                      {['Customer', 'Order ID', 'Items', 'Amount', 'Pay Type', 'Pay Status', 'Order Status', 'Date', 'View'].map(h => (
+                        <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
                     <tbody>
-                      {filteredOrders.map(o => (
-                        <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '1rem' }}>
-                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9375rem' }}>{o.user_id?.name || '—'}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{o.user_id?.phone || '—'}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.user_id?.address || '—'}</div>
-                          </td>
-                          <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem' }}>#{o.order_id?.slice(-6) || o._id.slice(-6)}</td>
-                          <td style={{ padding: '1rem', color: '#64748b' }}>{o.products?.length || 0} items</td>
-                          <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>₹{o.total_amount}</td>
-                          <td style={{ padding: '1rem' }}>
-                            {o.payment_method === 'Cash' ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#d97706', fontWeight: 700, fontSize: '0.8rem' }}><Banknote size={14} /> Cash</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#2563eb', fontWeight: 700, fontSize: '0.8rem' }}><CreditCard size={14} /> Online</span>}
-                          </td>
-                          <td style={{ padding: '1rem' }}>
-                            <select value={o.payment_status} onChange={e => updateOrder(o._id, { payment_status: e.target.value })} style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none', color: o.payment_status === 'Paid' ? '#16a34a' : '#dc2626' }}> {PAYMENT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)} </select>
-                          </td>
-                          <td style={{ padding: '1rem' }}>
-                            <select value={o.status} onChange={e => updateOrder(o._id, { status: e.target.value })} style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none' }}> {STATUSES.map(s => <option key={s} value={s}>{s}</option>)} </select>
-                          </td>
-                          <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
-                          <td style={{ padding: '1rem' }}>
-                            <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ padding: '0.35rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer' }}><Eye size={14} color="#475569" /></button>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredOrders.map(o => {
+                        const isUpdating = updatingId === o._id;
+                        return (
+                          <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                            <td style={{ padding: '1rem' }}>
+                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{o.user_id?.name || '—'}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>📞 {o.user_id?.phone || '—'}</div>
+                            </td>
+                            <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>#{o.order_id?.slice(-8).toUpperCase() || o._id.slice(-8).toUpperCase()}</td>
+                            <td style={{ padding: '1rem', color: '#64748b', fontWeight: 600 }}>{o.products?.length || 0} ITEMS</td>
+                            <td style={{ padding: '1rem', fontWeight: 900, color: '#0f172a', fontSize: '1rem' }}>₹{o.total_amount}</td>
+                            <td style={{ padding: '1rem' }}>
+                              {o.payment_method === 'Cash' ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#d97706', fontWeight: 800, fontSize: '0.75rem', background: '#fffbeb', padding: '0.25rem 0.6rem', borderRadius: 8 }}>CASH</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#2563eb', fontWeight: 800, fontSize: '0.75rem', background: '#eff6ff', padding: '0.25rem 0.6rem', borderRadius: 8 }}>ONLINE</span>}
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <Badge s={o.payment_status} />
+                                {o.payment_status === 'Unpaid' && (
+                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} 
+                                        style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
+                                        {isUpdating ? 'Wait...' : 'Mark Paid'}
+                                    </button>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <Badge s={o.status} />
+                                {o.status === 'Pending' && (
+                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })} 
+                                        style={{ padding: '0.4rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}>
+                                        {isUpdating ? 'Wait...' : 'Accept Order'}
+                                    </button>
+                                )}
+                                {o.status === 'Accepted' && (
+                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Processing' })} 
+                                        style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
+                                        {isUpdating ? 'Wait...' : 'Start Logic'}
+                                    </button>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem', fontWeight: 700 }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                            <td style={{ padding: '1rem' }}>
+                              <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Eye size={16} color="#64748b" /></button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

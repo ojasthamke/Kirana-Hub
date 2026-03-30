@@ -17,8 +17,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         const order = await Order.findById(orderId);
         if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-        // Security: only owner or admin
-        if (order.user_id.toString() !== session.id && session.role !== 'admin') {
+        // Security: only user (owner), or vendor (seller) or admin
+        const isUserOwner = order.user_id.toString() === session.id;
+        const isVendorOwner = order.vendor_id.toString() === session.id;
+        const isAdmin = session.role === 'admin';
+
+        if (!isUserOwner && !isVendorOwner && !isAdmin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -31,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
             updateData.total_amount = products.reduce((acc: number, p: any) => acc + (p.total || 0), 0);
         }
 
-        const updatedOrder = await Order.findByIdAndUpdate(orderId, updateData, { new: true });
+        const updatedOrder = await Order.findByIdAndUpdate(orderId, { $set: updateData }, { new: true });
         return NextResponse.json(updatedOrder);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
