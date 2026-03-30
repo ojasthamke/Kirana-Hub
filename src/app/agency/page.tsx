@@ -190,9 +190,9 @@ export default function AgencyPage() {
       height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
     }}>
       <div style={{
-        width: 64, height: 64, background: '#eff6ff', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 30px -5px rgba(37, 99, 235, 0.1)', animation: 'pulse 1.5s infinite ease-in-out'
+        width: 120, height: 120, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite ease-in-out'
       }}>
-        <TrendingUp size={32} color="#2563eb" style={{ animation: 'bounce 0.8s infinite alternate' }} />
+        <img src="/logo.png" alt="KiranaHub" style={{ width: '100%', height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
       </div>
       <div style={{ textAlign: 'center' }}>
         <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Agency Panel</p>

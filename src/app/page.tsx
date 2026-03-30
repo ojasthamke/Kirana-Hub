@@ -108,9 +108,9 @@ export default function Home() {
             height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
         }}>
             <div style={{
-                width: 64, height: 64, background: '#f0fdf4', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 30px -5px rgba(22, 163, 74, 0.1)', animation: 'pulse 1.5s infinite ease-in-out'
+                width: 120, height: 120, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite ease-in-out'
             }}>
-                <Leaf size={32} color="#16a34a" style={{ animation: 'bounce 0.8s infinite alternate' }} />
+                <img src="/logo.png" alt="KiranaHub" style={{ width: '100%', height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
                 <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Marketplace</p>
@@ -134,10 +134,9 @@ export default function Home() {
                 {/* ── HEADER ── */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ background: '#16a34a', padding: '0.625rem', borderRadius: 12 }}><Leaf size={20} color="#fff" /></div>
+                        <img src="/logo.png" alt="KiranaHub Official Logo" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
                         <div>
-                           <h1 style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'Outfit,sans-serif', margin: 0 }}>KiranaHub</h1>
-                           <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wholesale Premium</div>
+                           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.12em', marginLeft: '0.2rem' }}>Wholesale Premium</div>
                         </div>
                     </div>
                 </div>

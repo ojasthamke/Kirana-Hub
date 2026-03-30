@@ -17,31 +17,14 @@ export default function Loading() {
         }}>
             {/* Animated Logo Container */}
             <div style={{
-                width: '80px',
-                height: '80px',
-                background: '#f0fdf4',
-                borderRadius: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 10px 40px -10px rgba(22, 163, 74, 0.2)',
-                position: 'relative',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem'
             }}>
-                <Package size={40} color="#16a34a" style={{ animation: 'bounce 1s infinite alternate' }} />
-                
-                {/* Floating particles/dots */}
-                <span className="dot" style={{ position: 'absolute', top: -5, left: -5, width: 6, height: 6, background: '#16a34a', borderRadius: '50%', opacity: 0.1, animation: 'moveUp 3s infinite' }}></span>
-                <span className="dot" style={{ position: 'absolute', bottom: -10, right: 10, width: 4, height: 4, background: '#16a34a', borderRadius: '50%', opacity: 0.1, animation: 'moveUp 4s infinite 1s' }}></span>
-            </div>
-
-            <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0', fontFamily: 'Outfit, sans-serif' }}>KiranaHub</h3>
+                <img src="/logo.png" alt="KiranaHub" style={{ height: 120, width: 'auto', objectFit: 'contain', animation: 'bounce 1.5s infinite ease-in-out' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
                     {[0, 1, 2].map(i => (
                         <div key={i} style={{
-                            width: 6, height: 6, background: '#16a34a', borderRadius: '50%',
-                            animation: `loaderDots 1s infinite ${i * 0.1}s`,
+                            width: 8, height: 8, background: '#16a34a', borderRadius: '4',
+                            animation: `loaderDots 1.5s infinite ${i * 0.2}s`,
                             opacity: 0.3
                         }} />
                     ))}
