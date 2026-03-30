@@ -61,7 +61,9 @@ export default function AdminPage() {
     const [userHistory, setUserHistory] = useState<Order[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loadError, setLoadError] = useState(false);
-    const [selectedCity, setSelectedCity] = useState('Yavatmal');
+    const [selectedCity, setSelectedCity] = useState('All');
+    const [orderFilter, setOrderFilter] = useState('All');
+    const [paymentFilter, setPaymentFilter] = useState('All');
 
     const load = async () => {
         setLoading(true); setLoadError(false);
@@ -96,8 +98,14 @@ export default function AdminPage() {
     }, [selected, modal, orders]);
 
     const updateOrder = async (orderId: string, updates: any) => {
-        await apiFetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
-        load();
+        try {
+            await apiFetch('/api/admin/orders', { 
+                method: 'PATCH', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ orderId, ...updates }) 
+            });
+            load();
+        } catch (err) { alert('Failed to update order'); }
     };
 
     const deleteItem = async (type: string, id: string) => {
@@ -322,11 +330,27 @@ export default function AdminPage() {
                 {/* ── ORDERS ── */}
                 {tab === 'orders' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
-                        <h2 style={{ fontSize: '1.125rem', marginBottom: '1.25rem' }}>All Orders</h2>
-                        {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 12, gap: '0.25rem' }}>
+                                {['All', 'Pending', 'Processing', 'Delivered'].map(f => (
+                                    <button key={f} onClick={() => setOrderFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: orderFilter === f ? '#fff' : 'transparent', color: orderFilter === f ? '#0f172a' : '#64748b', boxShadow: orderFilter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>{f}</button>
+                                ))}
+                            </div>
+                            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 12, gap: '0.25rem' }}>
+                                {['All', 'Unpaid', 'Paid'].map(f => (
+                                    <button key={f} onClick={() => setPaymentFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: paymentFilter === f ? '#fff' : 'transparent', color: paymentFilter === f ? '#0f172a' : '#64748b', boxShadow: paymentFilter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>{f === 'All' ? 'Payment: All' : f}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {orders.filter(o => 
+                            (o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
+                            (orderFilter === 'All' || o.status === orderFilter) &&
+                            (paymentFilter === 'All' || o.payment_status === paymentFilter)
+                        ).length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
                                 <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                                <p>{searchQuery ? 'No orders match your search.' : 'No orders yet.'}</p>
+                                <p>No orders match the current filters.</p>
                             </div>
                         ) : (
                             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
@@ -340,7 +364,11 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())).map(o => (
+                                            {orders.filter(o => 
+                                                (o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
+                                                (orderFilter === 'All' || o.status === orderFilter) &&
+                                                (paymentFilter === 'All' || o.payment_status === paymentFilter)
+                                            ).map(o => (
                                                 <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                     <td style={{ padding: '1rem' }}>
                                                         <div style={{ fontWeight: 800, fontSize: '0.9375rem', color: '#0f172a' }}>{o.user_id?.name || '—'}</div>
@@ -358,16 +386,23 @@ export default function AdminPage() {
                                                         }
                                                     </td>
                                                     <td style={{ padding: '1rem' }}>
-                                                        <select value={o.payment_status} onChange={e => updateOrder(o._id, { payment_status: e.target.value })}
-                                                            style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none', color: o.payment_status === 'Paid' ? '#16a34a' : '#dc2626' }}>
-                                                            {PAYMENT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                                                        </select>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                            <Badge status={o.payment_status} />
+                                                            {o.payment_status === 'Unpaid' && (
+                                                                <button onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} style={{ padding: '0.3rem 0.5rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Mark Paid</button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td style={{ padding: '1rem' }}>
-                                                        <select value={o.status} onChange={e => updateOrder(o._id, { status: e.target.value })}
-                                                            style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', outline: 'none' }}>
-                                                            {ORDER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                                                        </select>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                            <Badge status={o.status} />
+                                                            {o.status === 'Pending' && (
+                                                                <button onClick={() => updateOrder(o._id, { status: 'Accepted' })} style={{ padding: '0.3rem 0.5rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Accept Order</button>
+                                                            )}
+                                                            {o.status === 'Accepted' && (
+                                                                <button onClick={() => updateOrder(o._id, { status: 'Delivered' })} style={{ padding: '0.3rem 0.5rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Mark Delivered</button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
                                                     <td style={{ padding: '1rem' }}>
@@ -471,7 +506,7 @@ export default function AdminPage() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc' }}>
-                                            {['Name', 'Phone', 'City / State', 'Address', 'Actions'].map(h => (
+                                            {['Name', 'Phone', 'City / State', 'Address', 'Unpaid Dues', 'Actions'].map(h => (
                                                 <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
                                             ))}
                                         </tr>
@@ -489,6 +524,22 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{u.state || 'Maharashtra'}</div>
                                                     </td>
                                                     <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{u.address}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        {(() => {
+                                                            const unpaid = orders.filter(o => o.user_id?._id === u._id && o.payment_status === 'Unpaid');
+                                                            const total = unpaid.reduce((sum, o) => sum + o.total_amount, 0);
+                                                            return (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                                    <div style={{ fontWeight: 800, color: total > 0 ? '#dc2626' : '#16a34a' }}>₹{total.toLocaleString()}</div>
+                                                                    {total > 0 && <button onClick={() => {
+                                                                        if (confirm(`Mark all ${unpaid.length} unpaid orders as paid for ${u.name}?`)) {
+                                                                            unpaid.forEach(o => updateOrder(o._id, { payment_status: 'Paid' }));
+                                                                        }
+                                                                    }} style={{ fontSize: '0.6rem', padding: '0.2rem 0.4rem', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 4, cursor: 'pointer', fontWeight: 700 }}>Clear Dues</button>}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
                                                     <td style={{ padding: '1rem' }}>
                                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                             <button onClick={() => { setSelected(u); setModal('user' as any); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
