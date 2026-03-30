@@ -3,31 +3,37 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard } from 'lucide-react';
-import { TokenPayload } from '../../lib/auth';
+import { TokenPayload, decodeTokenPayload } from '../../lib/auth';
 import { useCart } from '@/context/CartContext';
 import { apiFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 
 const IS_LOCAL = process.env.NEXT_PUBLIC_LOCAL_MODE === 'true';
 
-export default function Navbar({ session }: { session: TokenPayload | null }) {
+export default function Navbar({ session: serverSession }: { session: TokenPayload | null }) {
     const pathname = usePathname();
     const router = useRouter();
     const { totalItems, totalPrice } = useCart();
     const [menuOpen, setMenuOpen] = useState(false);
     const [unpaidAmount, setUnpaidAmount] = useState<number | null>(null);
+    const [session, setSession] = useState<TokenPayload | null>(serverSession);
 
+    // On mount, check localStorage for auth token (critical for mobile/Capacitor)
     useEffect(() => {
-        if (session && session.role === 'user') {
-            apiFetch('/api/orders/unpaid-total')
-                .then(r => r.json())
-                .then(d => { if (typeof d.totalUnpaid === 'number') setUnpaidAmount(d.totalUnpaid); })
-                .catch(() => { });
+        if (!session) {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                const decoded = decodeTokenPayload(token);
+                if (decoded) setSession(decoded);
+            }
         }
     }, []);
 
+
     const handleLogout = async () => {
         await apiFetch('/api/auth/logout', { method: 'POST' });
+        localStorage.removeItem('auth_token');
+        setSession(null);
         router.push('/login');
         router.refresh();
     };

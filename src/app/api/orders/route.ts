@@ -6,7 +6,7 @@ import User from '@/models/User';
 import { getAuthSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
-    const session = getAuthSession();
+    const session = getAuthSession(req);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {

@@ -4,7 +4,7 @@ import Order from '@/models/Order';
 import { getAuthSession } from '@/lib/auth';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-    const session = getAuthSession();
+    const session = getAuthSession(req);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {

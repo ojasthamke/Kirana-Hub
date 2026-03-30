@@ -4,7 +4,7 @@ import VendorWallet from '@/models/VendorWallet';
 import { getAuthSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
-    const session = getAuthSession();
+    const session = getAuthSession(req);
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { vendorId, amount } = await req.json();

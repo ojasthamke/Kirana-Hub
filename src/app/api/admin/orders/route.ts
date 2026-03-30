@@ -5,8 +5,8 @@ import Vendor from '@/models/Vendor';
 import User from '@/models/User';
 import { getAuthSession } from '@/lib/auth';
 
-export async function GET() {
-    const session = getAuthSession();
+export async function GET(req: Request) {
+    const session = getAuthSession(req);
     if (!session || session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-    const session = getAuthSession();
+    const session = getAuthSession(req);
     if (!session || session.role !== 'admin') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

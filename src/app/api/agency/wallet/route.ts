@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
 import { getAuthSession } from '@/lib/auth';
 
-export async function GET() {
-    const session = getAuthSession();
+export async function GET(req: Request) {
+    const session = getAuthSession(req);
     if (!session || session.role !== 'vendor') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

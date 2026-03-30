@@ -21,17 +21,20 @@ export const verifyToken = (token: string): TokenPayload | null => {
     }
 };
 
-export const getAuthSession = (): TokenPayload | null => {
-    try {
-        const token = cookies().get('token')?.value;
-        if (!token) return null;
-        return verifyToken(token);
-    } catch {
-        return null; // Cookies are unavailable during static export
+// Server-side auth: checks cookies first, then Authorization header
+// This is used by ALL API routes
+export const getAuthSession = (req?: Request): TokenPayload | null => {
+    // 1. Try Authorization header (mobile app sends this)
+    if (req) {
+        const authHeader = req.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.slice(7);
+            const payload = verifyToken(token);
+            if (payload) return payload;
+        }
     }
-};
 
-export const getVendorSession = (): TokenPayload | null => {
+    // 2. Fall back to cookies (web browser sends this)
     try {
         const token = cookies().get('token')?.value;
         if (!token) return null;
@@ -41,4 +44,19 @@ export const getVendorSession = (): TokenPayload | null => {
     }
 };
 
+// Client-side token decoder (does NOT verify signature — just reads payload)
+// Used by Navbar and other client components to show the right UI
+export function decodeTokenPayload(token: string): TokenPayload | null {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.id && payload.role && payload.name) {
+            return { id: payload.id, role: payload.role, name: payload.name };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
 

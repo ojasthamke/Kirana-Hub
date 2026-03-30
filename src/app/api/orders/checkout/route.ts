@@ -6,7 +6,7 @@ import { getAuthSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
     try {
-        const session = getAuthSession();
+        const session = getAuthSession(req);
         if (!session || session.role !== 'user') {
             return NextResponse.json({ error: 'Please login as a Shop Owner to place orders.' }, { status: 401 });
         }
