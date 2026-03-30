@@ -27,7 +27,15 @@ export default function LoginClient() {
                 credentials: 'include', // Needed for cross-origin cookies
                 body: JSON.stringify({ phone, password, role })
             });
-            const data = await res.json().catch(() => ({ error: 'Invalid server response' }));
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (jsonErr) {
+                console.error('Invalid JSON:', text);
+                setError(`Server Error: Received ${res.status} response. Please check your server logs.`);
+                return;
+            }
             
             if (data.success) {
                 // Use hard navigation so the cookie is fully sent on the next request
@@ -39,7 +47,7 @@ export default function LoginClient() {
             }
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(`Could not connect to server. Ensure you have internet and the API URL is correct.`);
+            setError(`Network Error: ${err.message || 'Could not connect'}. Check your internet and server URL.`);
         } finally {
             setLoading(false);
         }

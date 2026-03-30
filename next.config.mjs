@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Only use static export when building for Capacitor
-    output: process.env.IS_CAPACITOR === 'true' ? 'export' : undefined,
+    output: 'export',
     images: {
         unoptimized: true,
     },
