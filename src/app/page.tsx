@@ -162,18 +162,19 @@ export default function Home() {
 
                                             {/* LISTING VARIANTS BESIDE EACH OTHER IN THE SAME BOX */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                
-                                                {/* 1. Base Product Variation */}
-                                                <ProductVariationRow 
-                                                    product={product} 
-                                                    qty={getQty(product._id)} 
-                                                    onUpdate={(q) => handleUpdate(product, q)}
-                                                />
-
-                                                {/* 2. Other Variants (Box, Pouch, etc.) */}
-                                                {product.variants?.map((v, i) => (
+                                                {/* Render base product only if there are no variants, or explicitly intended */}
+                                                {(!product.variants || product.variants.length === 0) && (
                                                     <ProductVariationRow 
-                                                        key={i}
+                                                        product={product} 
+                                                        qty={getQty(product._id)} 
+                                                        onUpdate={(q) => handleUpdate(product, q)}
+                                                    />
+                                                )}
+
+                                                {/* Render variants if available */}
+                                                {product.variants?.map((v) => (
+                                                    <ProductVariationRow 
+                                                        key={v.variant_name}
                                                         product={product}
                                                         variant={v}
                                                         qty={getQty(product._id, v.variant_name)}

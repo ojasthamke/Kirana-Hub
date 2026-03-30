@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-static';
+export async function generateStaticParams() { return [{ id: 'dummy' }]; }
 import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
 import { getAuthSession } from '@/lib/auth';

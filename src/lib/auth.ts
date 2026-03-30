@@ -3,11 +3,7 @@ import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
 
-export interface TokenPayload {
-    id: string;
-    role: 'user' | 'vendor' | 'admin';
-    name: string;
-}
+import { TokenPayload } from './client-auth';
 
 export const signToken = (payload: TokenPayload) => {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: '365d' });
@@ -46,17 +42,5 @@ export const getAuthSession = (req?: Request): TokenPayload | null => {
 
 // Client-side token decoder (does NOT verify signature — just reads payload)
 // Used by Navbar and other client components to show the right UI
-export function decodeTokenPayload(token: string): TokenPayload | null {
-    try {
-        const parts = token.split('.');
-        if (parts.length !== 3) return null;
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.id && payload.role && payload.name) {
-            return { id: payload.id, role: payload.role, name: payload.name };
-        }
-        return null;
-    } catch {
-        return null;
-    }
-}
+
 

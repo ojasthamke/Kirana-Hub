@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard } from 'lucide-react';
-import { TokenPayload, decodeTokenPayload } from '../../lib/auth';
+import { TokenPayload, decodeTokenPayload } from '../../lib/client-auth';
 import { useCart } from '@/context/CartContext';
 import { apiFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';

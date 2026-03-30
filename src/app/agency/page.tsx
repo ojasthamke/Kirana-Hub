@@ -125,6 +125,7 @@ export default function AgencyPage() {
       const method = modal === 'add' ? 'POST' : 'PATCH';
       const payload = modal === 'edit' ? { productId: sel!._id, ...body } : body;
       const r = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!r.ok) { setErr(`Server Error (${r.status}). Please try again later.`); setSaving(false); return; }
       const d = await r.json();
       if (!d.success) { setErr(d.error || 'Failed'); setSaving(false); return; }
       setModal(null); setPf(emptyP); load();
@@ -378,9 +379,26 @@ export default function AgencyPage() {
                 <SI label="NameHi"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
                 </div>
                 <SI label="Category">
-                    <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                    {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <input 
+                                placeholder="New category..." 
+                                value={customCat} 
+                                onChange={e => setCustomCat(e.target.value)} 
+                                style={{ width: 120, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.875rem' }} 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={addCustomCat} 
+                                style={{ padding: '0 0.75rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
                 </SI>
                 <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
                     <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Default Configuration</p>
