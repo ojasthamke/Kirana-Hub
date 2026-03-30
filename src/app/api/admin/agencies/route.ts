@@ -64,7 +64,7 @@ export async function PATCH(req: Request) {
             updates.business_segments = business_segments;
         }
 
-        const vendor = await Vendor.findByIdAndUpdate(vendorId, updates, { new: true });
+        const vendor = await Vendor.findByIdAndUpdate(vendorId, { $set: updates }, { new: true });
         return NextResponse.json({ success: true, vendor });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
