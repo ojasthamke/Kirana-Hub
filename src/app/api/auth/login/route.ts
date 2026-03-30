@@ -6,6 +6,10 @@ import Vendor from '@/models/Vendor';
 import { signToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
+export async function GET() {
+    return NextResponse.json({ ok: true, message: "Login API is reachable" });
+}
+
 export async function POST(req: Request) {
     try {
         const conn = await dbConnect(); // Connect to Database
