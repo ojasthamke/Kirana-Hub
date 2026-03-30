@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import './Vendor'; // Ensure Vendor schema is registered for populate
+import './User'; // Ensure User schema is registered for populate
+import './Product'; // Ensure Product schema is registered for populate
 
 const OrderSchema = new mongoose.Schema({
     order_id: { type: String, unique: true },

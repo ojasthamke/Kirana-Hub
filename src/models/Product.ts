@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import './Vendor'; // Ensure Vendor schema is registered for populate
 
 // Define the Variant Schema first
 const VariantSchema = new mongoose.Schema({
