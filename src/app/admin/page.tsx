@@ -106,7 +106,7 @@ export default function AdminPage() {
                 <Package size={32} color="#16a34a" style={{ animation: 'bounce 0.8s infinite alternate' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
-                <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Admin</p>
+                <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>Admin Portal</p>
                 <div style={{ height: 4, width: 120, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
                     <div style={{ height: '100%', width: '40%', background: '#16a34a', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
                 </div>

@@ -195,7 +195,7 @@ export default function AgencyPage() {
         <img src="/logo.png" alt="KiranaHub" style={{ width: '100%', height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>KiranaHub Agency Panel</p>
+        <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>Agency Dashboard</p>
         <div style={{ height: 4, width: 140, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
           <div style={{ height: '100%', width: '40%', background: '#2563eb', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
         </div>
