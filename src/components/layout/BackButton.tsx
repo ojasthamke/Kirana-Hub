@@ -9,9 +9,17 @@ export default function BackButton() {
     // Don't show back button on the homepage
     if (pathname === '/') return null;
 
+    const handleBack = () => {
+        if (window.history.length <= 2) {
+            router.push('/');
+        } else {
+            router.back();
+        }
+    };
+
     return (
         <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             style={{
                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                 padding: '0.4rem 0.75rem',

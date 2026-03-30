@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import BackButton from "@/components/layout/BackButton";
+import AppListener from "@/components/layout/AppListener";
 import { CartProvider } from "../context/CartContext";
 import { getAuthSession } from "../lib/auth";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <CartProvider>
                     <Navbar session={session} />
                     <BackButton />
+                    <AppListener />
                     <main style={{ minHeight: 'calc(100vh - 65px)' }}>{children}</main>
                 </CartProvider>
             </body>
