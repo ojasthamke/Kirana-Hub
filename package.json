@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:mobile": "SET IS_CAPACITOR=true && next build",
+    "build:mobile": "next build",
     "start": "next start",
     "lint": "next lint"
   },
