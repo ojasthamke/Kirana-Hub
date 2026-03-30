@@ -68,9 +68,8 @@ export default function LoginClient() {
 
                 {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 800, color: 'var(--gray-900)', letterSpacing: '-0.03em' }}>
-                        <Store size={22} color="var(--accent)" strokeWidth={2.5} />
-                        KiranaHub
+                    <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', textDecoration: 'none' }}>
+                        <img src="/logo.png" alt="KiranaHub" style={{ height: 100, width: 'auto', objectFit: 'contain' }} />
                     </Link>
                     <h1 style={{ fontSize: '1.625rem', marginBottom: '0.375rem' }}>Welcome back</h1>
                     <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>Sign in to continue</p>
