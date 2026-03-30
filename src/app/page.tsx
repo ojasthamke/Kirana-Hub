@@ -108,17 +108,19 @@ export default function Home() {
         });
     };
 
-    const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
-    const filtered = products.filter(p => {
+    // 1. Get products available for the user's vertical
+    const verticalProducts = products.filter(p => 
+        !userVertical || userVertical === 'Other' || (p.vendor_id?.business_segments || []).includes(userVertical)
+    );
+
+    // 2. Derive categories from these products
+    const categories = ['All', ...Array.from(new Set(verticalProducts.map(p => p.category)))];
+
+    // 3. Apply final UI filters (Category + Search)
+    const filtered = verticalProducts.filter(p => {
         const matchesCategory = filter === 'All' || p.category === filter;
         const matchesSearch = p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.name_hi || '').includes(search);
-        
-        // Filter by user's business vertical
-        // If userVertical is null (not logged in), skip filter
-        // Otherwise, only show products from vendors that serve this vertical
-        const matchesVertical = !userVertical || userVertical === 'Other' || (p.vendor_id?.business_segments || []).includes(userVertical);
-        
-        return matchesCategory && matchesSearch && matchesVertical;
+        return matchesCategory && matchesSearch;
     });
 
     if (loading) return (

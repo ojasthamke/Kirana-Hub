@@ -96,8 +96,20 @@ export default function AdminPage() {
 
     const deleteItem = async (type: string, id: string) => {
         if (!confirm('Are you sure?')) return;
-        await apiFetch(`/api/admin/${type}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [`${type.slice(0, -1)}Id`]: id }) });
-        load();
+        
+        let idField = 'id';
+        if (type === 'users') idField = 'userId';
+        if (type === 'agencies') idField = 'vendorId';
+        if (type === 'products') idField = 'productId';
+
+        const res = await apiFetch(`/api/admin/${type}`, { 
+            method: 'DELETE', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ [idField]: id }) 
+        });
+        
+        if (res.ok) load();
+        else alert('Failed to delete item.');
     };
 
     if (loading) return (
