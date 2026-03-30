@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye, LayoutGrid } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
-interface User { _id: string; name: string; phone: string; address: string; role: 'user' | 'admin' | 'vendor'; }
-interface Vendor { _id: string; name: string; store_name: string; phone: string; address: string; }
+interface User { _id: string; name: string; phone: string; address: string; role: 'user' | 'admin' | 'vendor'; business_type?: string; }
+interface Vendor { _id: string; name: string; store_name: string; phone: string; address: string; business_segments?: string[]; }
+interface BusinessVertical { _id: string; name: string; icon: string; description?: string; is_active: boolean; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: User | null; vendor_id?: Vendor | null; }
 interface Product { _id: string; name_en: string; name_hi: string; image_url?: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id?: Vendor | null; }
 
@@ -45,13 +46,14 @@ const SI = (p: any) => (
 const Inp = (p: any) => <input {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', width: '100%', outline: 'none', boxSizing: 'border-box', ...p.style }} />;
 
 export default function AdminPage() {
-    const [tab, setTab] = useState<'overview' | 'users' | 'agencies' | 'orders' | 'products'>('overview');
+    const [tab, setTab] = useState<'overview' | 'users' | 'agencies' | 'orders' | 'products' | 'verticals'>('overview');
     const [users, setUsers] = useState<User[]>([]);
     const [agencies, setAgencies] = useState<Vendor[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [verticals, setVerticals] = useState<BusinessVertical[]>([]);
     const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState<'user' | 'vendor' | 'order' | 'product' | 'orderDetails' | null>(null);
+    const [modal, setModal] = useState<'user' | 'vendor' | 'order' | 'product' | 'orderDetails' | 'vertical' | null>(null);
     const [selected, setSelected] = useState<any>(null);
     const [userHistory, setUserHistory] = useState<Order[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -60,17 +62,19 @@ export default function AdminPage() {
     const load = async () => {
         setLoading(true); setLoadError(false);
         try {
-            const [ur, ar, or, pr] = await Promise.all([
+            const [ur, ar, or, pr, vr] = await Promise.all([
                 apiFetch('/api/admin/users'),
                 apiFetch('/api/admin/agencies'),
                 apiFetch('/api/admin/orders'),
-                apiFetch('/api/admin/products')
+                apiFetch('/api/admin/products'),
+                apiFetch('/api/admin/business-categories')
             ]);
             if (ur.status === 401) { window.location.href = '/login'; return; }
             setUsers(await ur.json());
             setAgencies(await ar.json());
             setOrders(await or.json());
             setProducts(await pr.json());
+            setVerticals(await vr.json());
         } catch { setLoadError(true); }
         setLoading(false);
     };
@@ -145,6 +149,7 @@ export default function AdminPage() {
                         { id: 'products', icon: <Package size={18} />, label: 'Marketplace' },
                         { id: 'users', icon: <Users size={18} />, label: 'Shop Owners' },
                         { id: 'agencies', icon: <Store size={18} />, label: 'Agencies' },
+                        { id: 'verticals', icon: <LayoutGrid size={18} />, label: 'Business Verticals' },
                     ].map(item => (
                         <button key={item.id} onClick={() => setTab(item.id as any)} style={{
                             display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
@@ -485,6 +490,45 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+                
+                {/* ── VERTICALS (Business Types) ── */}
+                {tab === 'verticals' && (
+                    <div style={{ animation: 'fadeUp 0.35s ease both' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h2 style={{ fontSize: '1.125rem' }}>Marketplace Segments</h2>
+                            <button onClick={() => { setSelected(null); setModal('vertical'); }} style={{ padding: '0.6rem 1.25rem', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Plus size={16} /> Add Vertical</button>
+                        </div>
+                        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                                    <thead>
+                                        <tr style={{ background: '#f8fafc' }}>
+                                            {['Icon', 'Vertical Name', 'Description', 'Status', 'Actions'].map(h => (
+                                                <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {verticals.filter(v => v.name.toLowerCase().includes(searchQuery.toLowerCase())).map(v => (
+                                            <tr key={v._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '1rem', fontSize: '1.5rem' }}>{v.icon}</td>
+                                                <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>{v.name}</td>
+                                                <td style={{ padding: '1rem', color: '#64748b' }}>{v.description || 'Global Segment'}</td>
+                                                <td style={{ padding: '1rem' }}>{v.is_active ? <Badge status="In Stock" /> : <Badge status="Out of Stock" />}</td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <button onClick={() => { setSelected(v); setModal('vertical'); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                        <button onClick={() => deleteItem('business-categories', v._id)} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ── MODAL: Order Details ── */}
@@ -657,8 +701,44 @@ export default function AdminPage() {
                             <SI label="Phone Number"><Inp name="phone" defaultValue={selected?.phone} required /></SI>
                             <SI label="Email Address"><Inp name="email" type="email" defaultValue={selected?.email} required /></SI>
                         </div>
+                        <SI label="Allotted Business Verticals">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                {verticals.map(v => {
+                                    const isSel = (selected?.business_segments || []).includes(v.name);
+                                    return (
+                                        <label key={v._id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: 8, background: '#f8fafc', border: '1.5px solid #e2e8f0', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                                            <input type="checkbox" name="business_segments" value={v.name} defaultChecked={isSel} />
+                                            {v.icon} {v.name}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </SI>
                         <SI label={selected ? 'Update Password (Optional)' : 'Portal Password'}><Inp name="password" type="password" required={!selected} /></SI>
                         <button type="submit" style={{ padding: '0.875rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>{selected ? 'Update Agency Profile' : 'Register Agency'}</button>
+                    </form>
+                </Modal>
+            )}
+
+            {/* ── MODAL: Vertical (Add/Edit) ── */}
+            {modal === 'vertical' && (
+                <Modal title={selected ? 'Edit Vertical' : 'Add Business Vertical'} onClose={() => setModal(null)}>
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        const body = { name: f.get('name'), icon: f.get('icon'), description: f.get('description'), is_active: true };
+                        const url = '/api/admin/business-categories';
+                        const method = selected ? 'PATCH' : 'POST';
+                        const payload = selected ? { id: selected._id, ...body } : body;
+                        await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        setModal(null); load();
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '1rem' }}>
+                            <SI label="Vertical Name"><Inp name="name" defaultValue={selected?.name} required /></SI>
+                            <SI label="Emoji"><Inp name="icon" defaultValue={selected?.icon || '🏢'} required /></SI>
+                        </div>
+                        <SI label="Description"><Inp name="description" defaultValue={selected?.description} /></SI>
+                        <button type="submit" style={{ padding: '0.875rem', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>{selected ? 'Update Vertical' : 'Create Vertical'}</button>
                     </form>
                 </Modal>
             )}

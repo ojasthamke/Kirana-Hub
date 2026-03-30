@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
         // Fetch products and populate vendor info locally
         const products = await Product.find(filter)
-            .populate('vendor_id', 'store_name')
+            .populate('vendor_id', 'store_name business_segments')
             .sort({ createdAt: -1 });
 
         console.log('DEBUG: Products found:', JSON.stringify(products[0]?.variants || 'No variants on first prod'));

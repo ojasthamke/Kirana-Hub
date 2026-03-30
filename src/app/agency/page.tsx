@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/api';
 
 interface Variant { variant_name: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: { _id: string; name: string; phone: string; address: string } | null; }
-interface Product { _id: string; name_en: string; name_hi: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; variants?: Variant[]; }
+interface Product { _id: string; name_en: string; name_hi: string; image_url?: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; offer?: string; variants?: Variant[]; }
 interface Wallet { totalRevenue: number; pendingAmount: number; totalPaid: number; orderCount: number; }
 
 const DEFAULT_CATS = ['Pulses', 'Rice', 'Staples', 'Spices', 'Oil', 'Flour', 'Sugar', 'Dry Fruits', 'Other'];
@@ -63,7 +63,7 @@ export default function AgencyPage() {
   const [customCat, setCustomCat] = useState('');
   const [cats, setCats] = useState(DEFAULT_CATS);
 
-  const emptyP = { name_en: '', name_hi: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', offer: '', variants: [] as Variant[] };
+  const emptyP = { name_en: '', name_hi: '', image_url: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', offer: '', variants: [] as Variant[] };
   const [pf, setPf] = useState(emptyP);
 
   const load = useCallback(async () => {
@@ -151,6 +151,7 @@ export default function AgencyPage() {
         min_qty: String(p.min_qty || 1), 
         status: p.status, 
         offer: p.offer || '',
+        image_url: p.image_url || '',
         variants: p.variants || []
     });
     setModal('edit');
@@ -289,8 +290,17 @@ export default function AgencyPage() {
                       {filteredProducts.map(p => (
                         <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '1rem' }}>
-                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              {p.image_url ? (
+                                <img src={p.image_url} alt={p.name_en} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                              ) : (
+                                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>No Img</div>
+                              )}
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                              </div>
+                            </div>
                           </td>
                           <td style={{ padding: '1rem', color: '#475569' }}>{p.category}</td>
                           <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price}/ {p.unit}</td>
@@ -402,6 +412,7 @@ export default function AgencyPage() {
                 <SI label="NameEn"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
                 <SI label="NameHi"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
                 </div>
+                <SI label="Product Image URL"><Inp placeholder="https://example.com/photo.jpg" value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))}/></SI>
                 <SI label="Category">
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>

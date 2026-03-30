@@ -141,8 +141,12 @@ export default function CartPage() {
                                 }}
                                     className="animate-fade-in cart-item"
                                 >
-                                    <div style={{ width: 52, height: 52, borderRadius: 'var(--radius-md)', background: 'var(--gray-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <Package size={24} color="var(--gray-300)" />
+                                    <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)', background: 'var(--gray-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', border: '1px solid var(--gray-100)' }}>
+                                        {item.imageUrl ? (
+                                            <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '0.25rem' }} />
+                                        ) : (
+                                            <Package size={24} color="var(--gray-300)" />
+                                        )}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontWeight: 700, color: 'var(--gray-900)', fontSize: '0.9375rem', marginBottom: '0.125rem' }} className="truncate">{item.name}</div>

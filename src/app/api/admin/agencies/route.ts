@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
     try {
         await dbConnect();
-        const { name, store_name, store_address, gst_number, turnover, phone, email, password } = await req.json();
+        const { name, store_name, store_address, gst_number, turnover, phone, email, password, business_segments } = await req.json();
 
         const existing = await Vendor.findOne({ $or: [{ phone }, { gst_number }, { email }] });
         if (existing) {
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
         const vendor = await Vendor.create({
             name, store_name, store_address, gst_number, turnover,
             phone, email, password: hashedPassword,
-            status: 'approved'
+            status: 'approved',
+            business_segments: business_segments || []
         });
 
         return NextResponse.json({ success: true, vendor });
@@ -53,10 +54,14 @@ export async function PATCH(req: Request) {
     }
     try {
         await dbConnect();
-        const { vendorId, password, ...updates } = await req.json();
+        const { vendorId, password, business_segments, ...updates } = await req.json();
         
         if (password && password.trim() !== '') {
             updates.password = await bcrypt.hash(password, 10);
+        }
+
+        if (business_segments) {
+            updates.business_segments = business_segments;
         }
 
         const vendor = await Vendor.findByIdAndUpdate(vendorId, updates, { new: true });

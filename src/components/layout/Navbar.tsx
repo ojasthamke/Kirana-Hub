@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard } from 'lucide-react';
+import { ShoppingCart, LogOut, LayoutGrid, ShieldCheck, Store, User, Menu, X, ChevronRight, Package, CreditCard, Briefcase, BarChart3, CheckCircle } from 'lucide-react';
 import { TokenPayload, decodeTokenPayload } from '../../lib/client-auth';
 import { useCart } from '@/context/CartContext';
 import { apiFetch } from '@/lib/api';
@@ -17,6 +17,9 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
     const [menuOpen, setMenuOpen] = useState(false);
     const [unpaidAmount, setUnpaidAmount] = useState<number | null>(null);
     const [session, setSession] = useState<TokenPayload | null>(serverSession);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [verticals, setVerticals] = useState<any[]>([]);
+    const [userBusiness, setUserBusiness] = useState('');
 
     // On mount, check localStorage for auth token (critical for mobile/Capacitor)
     useEffect(() => {
@@ -29,6 +32,24 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
         }
     }, []);
 
+
+    useEffect(() => {
+        if (session && session.role === 'user') {
+            apiFetch('/api/admin/business-categories').then(r => r.json()).then(data => setVerticals(data));
+            apiFetch('/api/user/profile').then(r => r.json()).then(data => setUserBusiness(data.business_type));
+        }
+    }, [session]);
+
+    const selectVertical = async (v: string) => {
+        await apiFetch('/api/user/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ business_type: v })
+        });
+        setDrawerOpen(false);
+        setMenuOpen(false);
+        window.location.reload();
+    };
 
     const handleLogout = async () => {
         await apiFetch('/api/auth/logout', { method: 'POST' });
@@ -117,7 +138,16 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                                     {session.role === 'user' && (
                                         <>
                                             <MenuLink href="/" icon={<Store size={16} />} label="Marketplace" onClick={() => setMenuOpen(false)} />
-                                            <MenuLink href="/orders" icon={<Package size={16} />} label="My Orders" onClick={() => setMenuOpen(false)} />
+                                            <button onClick={() => { setDrawerOpen(true); setMenuOpen(false); }} style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem', 
+                                                borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', 
+                                                color: 'var(--gray-700)', fontSize: '0.85rem', fontWeight: 600, transition: 'background 0.2s'
+                                            }} onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gray-50)')} onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                                                <span style={{ color: 'var(--gray-400)' }}><Briefcase size={16} /></span>
+                                                Your Business
+                                            </button>
+                                            <MenuLink href="/orders" icon={<Package size={16} />} label="Orders" onClick={() => setMenuOpen(false)} />
+                                            <MenuLink href="/reports" icon={<BarChart3 size={16} />} label="Reports" onClick={() => setMenuOpen(false)} />
                                             <MenuLink href="/cart" icon={<ShoppingCart size={16} />} label="My Cart" onClick={() => setMenuOpen(false)} />
                                         </>
                                     )}
@@ -150,6 +180,57 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                 </div>
             )}
 
+            {/* Business Vertical Drawer */}
+            {drawerOpen && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'flex-end' }} onClick={() => setDrawerOpen(false)}>
+                    <div style={{ 
+                        width: '320px', height: '100%', background: '#fff', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', 
+                        padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)' 
+                    }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'Outfit, sans-serif' }}>Your Business</h2>
+                            <button onClick={() => setDrawerOpen(false)} style={{ width: 32, height: 32, borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}><X size={16} /></button>
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 20, border: '1px solid #f1f5f9' }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Currently Active As</div>
+                            <div style={{ fontSize: '1.125rem', fontWeight: 800, color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Store size={18} /> {userBusiness || 'Marketplace Browser'}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, marginBottom: '1.5rem' }}>
+                                Select your business type below to see agencies and products specifically allotted to your segment.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {verticals.map(v => (
+                                    <button key={v._id} onClick={() => selectVertical(v.name)} style={{
+                                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', borderRadius: 16,
+                                        border: '1.5px solid', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left',
+                                        background: userBusiness === v.name ? '#f0fdf4' : '#fff',
+                                        borderColor: userBusiness === v.name ? '#16a34a' : '#f1f5f9',
+                                        color: userBusiness === v.name ? '#16a34a' : '#0f172a'
+                                    }}>
+                                        <div style={{ fontSize: '1.5rem', width: 44, height: 44, borderRadius: 12, background: userBusiness === v.name ? '#16a34a' : '#f8fafc', color: userBusiness === v.name ? '#fff' : 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{v.icon}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 800, fontSize: '0.94rem' }}>{v.name}</div>
+                                            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>View Wholesale Deals</div>
+                                        </div>
+                                        {userBusiness === v.name && <CheckCircle size={16} />}
+                                    </button>
+                                ))}
+                                {verticals.length === 0 && <p style={{ color: '#94a3b8', textAlign: 'center', fontSize: '0.8rem' }}>No segments defined by admin yet.</p>}
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: 'auto', textAlign: 'center' }}>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>Admin controls the allotement of agencies to these business sections.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @media (max-width: 768px) {
                     .hide-mobile { display: none; }
@@ -168,6 +249,10 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideIn {
+                    from { transform: translateX(100%); }
+                    to { transform: translateX(0); }
                 }
             `}</style>
         </>

@@ -12,6 +12,7 @@ const VendorSchema = new mongoose.Schema({
     password: { type: String, required: true },
     status: { type: String, enum: ['pending', 'approved', 'blocked'], default: 'pending' },
     role: { type: String, default: 'vendor' },
+    business_segments: [{ type: String }],
 }, { timestamps: true });
 
 export default mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);

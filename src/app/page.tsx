@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight, Plus, Briefcase, Filter } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { apiFetch } from '@/lib/api';
 
@@ -15,12 +15,14 @@ interface Variant {
     status: 'In Stock' | 'Out of Stock';
 }
 
+interface Vendor { _id: string; store_name: string; business_segments?: string[]; }
 interface Product {
     _id: string; name_en: string; name_hi: string;
+    image_url?: string;
     category: string; price: number; stock: number;
     unit: string; min_qty: number;
     offer?: string; status: 'In Stock' | 'Out of Stock';
-    vendor_id?: { _id: string; store_name: string };
+    vendor_id?: Vendor;
     variants?: Variant[];
 }
 
@@ -65,6 +67,7 @@ export default function Home() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(false);
+    const [userVertical, setUserVertical] = useState<string | null>(null);
 
     const loadProducts = () => {
         setLoading(true); setFetchError(false);
@@ -74,7 +77,14 @@ export default function Home() {
         }).catch(() => { setFetchError(true); setLoading(false); });
     };
 
-    useEffect(() => { loadProducts(); }, []);
+    const loadUser = () => {
+        apiFetch('/api/user/profile').then(r => r.json()).then(d => setUserVertical(d.business_type || 'Other'));
+    };
+
+    useEffect(() => { 
+        loadProducts(); 
+        loadUser();
+    }, []);
 
     const getQty = (id: string, vName?: string) => cart.find(i => i.productId === id && i.variantName === vName)?.quantity || 0;
 
@@ -91,6 +101,7 @@ export default function Home() {
         addToCart({ 
             productId: p._id, variantName: vName, 
             name: vName ? `${p.name_en} (${vName})` : p.name_en, 
+            imageUrl: p.image_url,
             price, quantity: finalQty, 
             vendorId: p.vendor_id?._id || '', 
             minQty: minQty 
@@ -98,10 +109,17 @@ export default function Home() {
     };
 
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
-    const filtered = products.filter(p =>
-        (filter === 'All' || p.category === filter) &&
-        (p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.name_hi || '').includes(search))
-    );
+    const filtered = products.filter(p => {
+        const matchesCategory = filter === 'All' || p.category === filter;
+        const matchesSearch = p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.name_hi || '').includes(search);
+        
+        // Filter by user's business vertical
+        // If userVertical is null (not logged in), skip filter
+        // Otherwise, only show products from vendors that serve this vertical
+        const matchesVertical = !userVertical || userVertical === 'Other' || (p.vendor_id?.business_segments || []).includes(userVertical);
+        
+        return matchesCategory && matchesSearch && matchesVertical;
+    });
 
     if (loading) return (
         <div style={{
@@ -131,15 +149,7 @@ export default function Home() {
         <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '3rem' }}>
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.25rem' }}>
 
-                {/* ── HEADER ── */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <img src="/logo.png" alt="KiranaHub Official Logo" style={{ height: 64, width: 'auto', objectFit: 'contain' }} />
-                        <div>
-                           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.12em', marginLeft: '0.2rem' }}>Wholesale Premium</div>
-                        </div>
-                    </div>
-                </div>
+
 
                 {/* ── SEARCH & FILTER ── */}
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
@@ -173,17 +183,33 @@ export default function Home() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                                 {catProducts.map(product => (
-                                    <div key={product._id} style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', position: 'relative' }}>
+                                    <div key={product._id} style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}>
                                         <div style={{ padding: '1.5rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                <div>
-                                                   <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{product.name_en}</h3>
-                                                   <div style={{ fontSize: '0.875rem', color: '#94a3b8', fontWeight: 600 }}>{product.name_hi}</div>
+                                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem' }}>
+                                                {/* Small Thumbnail */}
+                                                <div style={{ width: 56, height: 56, borderRadius: 14, background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', border: '1px solid #f1f5f9' }}>
+                                                    {product.image_url ? (
+                                                        <img src={product.image_url} alt={product.name_en} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }} />
+                                                    ) : (
+                                                        <Package size={24} strokeWidth={1.5} color="#cbd5e1" />
+                                                    )}
                                                 </div>
-                                                <CardMenu product={product} vendorName={product.vendor_id?.store_name || 'Direct'} />
+
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div>
+                                                           <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>{product.name_en}</h3>
+                                                           <div style={{ fontSize: '0.875rem', color: '#94a3b8', fontWeight: 600 }}>{product.name_hi}</div>
+                                                           {product.offer && (
+                                                              <div style={{ marginTop: '0.35rem', color: '#2563eb', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>🎁 {product.offer}</div>
+                                                           )}
+                                                        </div>
+                                                        <CardMenu product={product} vendorName={product.vendor_id?.store_name || 'Direct'} />
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {/* LISTING VARIANTS BESIDE EACH OTHER IN THE SAME BOX */}
+                                            {/* REST OF THE VARIATIONS LISTING */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 {/* Render base product only if there are no variants, or explicitly intended */}
                                                 {(!product.variants || product.variants.length === 0) && (
@@ -262,7 +288,3 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
         </div>
     );
 }
-
-const Plus = ({ size }: { size: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-);

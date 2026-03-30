@@ -6,6 +6,7 @@ interface CartItem {
     productId: string;
     variantName?: string; // e.g. "Box", "Pouch"
     name: string;
+    imageUrl?: string;
     price: number;
     quantity: number;
     vendorId: string;

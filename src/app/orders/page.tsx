@@ -173,23 +173,37 @@ export default function UserOrders() {
                                 </div>
 
                                 {/* Product List with small photos */}
-                                <div style={{ borderTop: '1.5px dashed #f1f5f9', padding: '1rem 1.25rem', background: '#fcfcfd' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Ordered Items</div>
-                                    <div style={{ display: 'grid', gap: '0.6rem' }}>
+                                <div style={{ borderTop: '1.25px solid #f1f5f9', padding: '1.25rem', background: '#fcfcfd' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Proper Ordered Items List</div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>{o.products?.length} Items</div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
                                         {o.products?.map((p: any, i: number) => (
-                                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                    {p.image_url ? (
-                                                        <img src={p.image_url} alt={p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
-                                                    ) : (
-                                                        <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', color: '#cbd5e1' }}>📦</div>
-                                                    )}
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.25rem 0' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flex: 1 }}>
+                                                    <div style={{ width: 42, height: 42, borderRadius: 10, background: '#fff', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                                                        {p.image_url ? (
+                                                            <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '4px' }} />
+                                                        ) : (
+                                                            <Package size={20} color="#cbd5e1" />
+                                                        )}
+                                                    </div>
                                                     <div>
-                                                        <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#1e293b' }}>{p.name}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>₹{p.price} x {p.quantity}</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{p.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>Wholesale Price: ₹{p.price}</div>
                                                     </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>₹{p.total}</div>
+                                                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                                    <div style={{ textAlign: 'center', minWidth: '60px' }}>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Qty</div>
+                                                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#475569' }}>{p.quantity}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right', minWidth: '80px' }}>
+                                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Subtotal</div>
+                                                        <div style={{ fontSize: '0.94rem', fontWeight: 900, color: '#0f172a' }}>₹{p.total.toLocaleString()}</div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
