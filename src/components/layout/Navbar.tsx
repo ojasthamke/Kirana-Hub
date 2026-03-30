@@ -52,7 +52,6 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                     {/* Left: Logo */}
                     <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', flexShrink: 0 }}>
                         <img src="/logo.png" alt="KiranaHub Logo" style={{ height: 42, width: 'auto', objectFit: 'contain' }} />
-                        <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 900, color: 'var(--gray-900)', letterSpacing: '-0.02em' }}>KiranaHub</span>
                     </Link>
 
                     {/* Right: User + Options */}

@@ -135,8 +135,7 @@ export default function AdminPage() {
             {/* Sidebar */}
             <div style={{ width: 280, background: '#0f172a', color: '#fff', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', padding: '0 0.5rem' }}>
-                    <img src="/logo.png" alt="KiranaHub" style={{ width: 40, height: 40, borderRadius: 10, background: '#fff', padding: 4 }} />
-                    <span style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'Outfit, sans-serif' }}>Kirana Hub</span>
+                    <img src="/logo.png" alt="KiranaHub Logo" style={{ width: 'auto', height: 48, borderRadius: 10, background: '#fff', padding: 4 }} />
                 </div>
 
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
