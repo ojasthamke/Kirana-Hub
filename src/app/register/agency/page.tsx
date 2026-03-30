@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Store, MapPin, Hash, Phone, Mail, Lock, ChevronRight, CheckCircle } from 'lucide-react';
@@ -11,14 +11,35 @@ export default function VendorRegistration() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [locations, setLocations] = useState<any[]>([]);
     const [form, setForm] = useState({
         name: '', store_name: '', store_address: '', gst_number: '',
         turnover: '', phone: '', alternate_phone: '', email: '', password: '',
         state: 'Maharashtra', city: 'Yavatmal'
     });
 
-    const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-        setForm(p => ({ ...p, [k]: e.target.value }));
+    useEffect(() => {
+        apiFetch('/api/locations').then(r => r.json()).then(data => {
+            setLocations(data);
+            if (data.length > 0) {
+                const mah = data.find((l: any) => l.state === 'Maharashtra');
+                const initial = mah || data[0];
+                setForm(f => ({ ...f, state: initial.state, city: initial.cities[0] }));
+            }
+        });
+    }, []);
+
+    const selectedStateRecord = locations.find(l => l.state === form.state);
+
+    const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (k === 'state') {
+            const loc = locations.find(l => l.state === val);
+            setForm(p => ({ ...p, state: val, city: loc?.cities[0] || '' }));
+        } else {
+            setForm(p => ({ ...p, [k]: val }));
+        }
+    };
 
     const handleSubmit = async () => {
         setLoading(true); setError('');
@@ -104,7 +125,7 @@ export default function VendorRegistration() {
                                                 value={form.state} onChange={set('state')}
                                                 style={{ padding: '0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: 'var(--gray-900)', outline: 'none', background: 'var(--white)', width: '100%' }}
                                             >
-                                                <option value="Maharashtra">Maharashtra</option>
+                                                {locations.map(l => <option key={l.state} value={l.state}>{l.state}</option>)}
                                             </select>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -113,7 +134,8 @@ export default function VendorRegistration() {
                                                 value={form.city} onChange={set('city')}
                                                 style={{ padding: '0.75rem 1rem', border: '1.5px solid var(--gray-200)', borderRadius: 'var(--radius-sm)', fontSize: '0.9375rem', color: 'var(--gray-900)', outline: 'none', background: 'var(--white)', width: '100%' }}
                                             >
-                                                <option value="Yavatmal">Yavatmal</option>
+                                                {selectedStateRecord?.cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
+                                                {(!selectedStateRecord || selectedStateRecord.cities.length === 0) && <option value="">No Cities</option>}
                                             </select>
                                         </div>
                                     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Phone, Lock, MapPin, ChevronRight, CheckCircle, Store } from 'lucide-react';
@@ -21,11 +21,25 @@ const BUSINESS_TYPES = [
 
 export default function UserRegistration() {
     const router = useRouter();
+    const [locations, setLocations] = useState<any[]>([]);
     const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store', state: 'Maharashtra', city: 'Yavatmal' });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        apiFetch('/api/locations').then(r => r.json()).then(data => {
+            setLocations(data);
+            if (data.length > 0) {
+                const mah = data.find((l: any) => l.state === 'Maharashtra');
+                const initial = mah || data[0];
+                setForm(f => ({ ...f, state: initial.state, city: initial.cities[0] }));
+            }
+        });
+    }, []);
+
+    const selectedStateRecord = locations.find(l => l.state === form.state);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -129,10 +143,15 @@ export default function UserRegistration() {
                                 <select 
                                     className="input" 
                                     value={form.state} 
-                                    onChange={e => setForm(p => ({ ...p, state: e.target.value }))}
+                                    onChange={e => {
+                                        const s = e.target.value;
+                                        const loc = locations.find(l => l.state === s);
+                                        setForm(p => ({ ...p, state: s, city: loc?.cities[0] || '' }));
+                                    }} 
                                     style={{ appearance: 'none', background: '#fff' }}
+                                    required
                                 >
-                                    <option value="Maharashtra">Maharashtra</option>
+                                    {locations.map(l => <option key={l.state} value={l.state}>{l.state}</option>)}
                                 </select>
                             </div>
                             <div className="form-field">
@@ -140,10 +159,12 @@ export default function UserRegistration() {
                                 <select 
                                     className="input" 
                                     value={form.city} 
-                                    onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
+                                    onChange={e => setForm(p => ({ ...p, city: e.target.value }))} 
                                     style={{ appearance: 'none', background: '#fff' }}
+                                    required
                                 >
-                                    <option value="Yavatmal">Yavatmal</option>
+                                    {selectedStateRecord?.cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
+                                    {(!selectedStateRecord || selectedStateRecord.cities.length === 0) && <option value="">No Cities</option>}
                                 </select>
                             </div>
                         </div>

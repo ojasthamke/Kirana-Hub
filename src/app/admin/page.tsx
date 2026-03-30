@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye, LayoutGrid } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, ShoppingBag, Users, Package, TrendingUp, MoreVertical, Layout, Store, CheckCircle, CreditCard, Banknote, Eye, LayoutGrid, MapPin } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 interface User { _id: string; name: string; phone: string; address: string; state: string; city: string; role: 'user' | 'admin' | 'vendor'; business_type?: string; }
@@ -8,6 +8,8 @@ interface Vendor { _id: string; name: string; store_name: string; phone: string;
 interface BusinessVertical { _id: string; name: string; icon: string; description?: string; is_active: boolean; }
 interface Order { _id: string; order_id: string; total_amount: number; status: string; payment_status: string; payment_method: string; createdAt: string; products: any[]; user_id?: User | null; vendor_id?: Vendor | null; }
 interface Product { _id: string; name_en: string; name_hi: string; image_url?: string; category: string; price: number; stock: number; unit: string; min_qty: number; status: string; vendor_id?: Vendor | null; }
+interface Location { _id: string; state: string; cities: string[]; is_active: boolean; }
+
 
 const ORDER_STATUSES = ['Pending', 'Accepted', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
 const PAYMENT_STATUSES = ['Unpaid', 'Paid', 'Pending Approval'];
@@ -46,14 +48,15 @@ const SI = (p: any) => (
 const Inp = (p: any) => <input {...p} style={{ padding: '0.65rem 0.875rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.9375rem', width: '100%', outline: 'none', boxSizing: 'border-box', ...p.style }} />;
 
 export default function AdminPage() {
-    const [tab, setTab] = useState<'overview' | 'users' | 'agencies' | 'orders' | 'products' | 'verticals'>('overview');
+    const [tab, setTab] = useState<'overview' | 'users' | 'agencies' | 'orders' | 'products' | 'verticals' | 'locations'>('overview');
     const [users, setUsers] = useState<User[]>([]);
     const [agencies, setAgencies] = useState<Vendor[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [verticals, setVerticals] = useState<BusinessVertical[]>([]);
+    const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(true);
-    const [modal, setModal] = useState<'user' | 'vendor' | 'order' | 'product' | 'orderDetails' | 'vertical' | null>(null);
+    const [modal, setModal] = useState<'user' | 'vendor' | 'order' | 'product' | 'orderDetails' | 'vertical' | 'location' | null>(null);
     const [selected, setSelected] = useState<any>(null);
     const [userHistory, setUserHistory] = useState<Order[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,12 +66,13 @@ export default function AdminPage() {
     const load = async () => {
         setLoading(true); setLoadError(false);
         try {
-            const [ur, ar, or, pr, vr] = await Promise.all([
+            const [ur, ar, or, pr, vr, lr] = await Promise.all([
                 apiFetch('/api/admin/users'),
                 apiFetch('/api/admin/agencies'),
                 apiFetch('/api/admin/orders'),
                 apiFetch('/api/admin/products'),
-                apiFetch('/api/admin/business-categories')
+                apiFetch('/api/admin/business-categories'),
+                apiFetch('/api/admin/locations')
             ]);
             if (ur.status === 401) { window.location.href = '/login'; return; }
             setUsers(await ur.json());
@@ -76,6 +80,7 @@ export default function AdminPage() {
             setOrders(await or.json());
             setProducts(await pr.json());
             setVerticals(await vr.json());
+            setLocations(await lr.json());
         } catch { setLoadError(true); }
         setLoading(false);
     };
@@ -164,6 +169,7 @@ export default function AdminPage() {
                         { id: 'users', icon: <Users size={18} />, label: 'Shop Owners' },
                         { id: 'agencies', icon: <Store size={18} />, label: 'Agencies' },
                         { id: 'verticals', icon: <LayoutGrid size={18} />, label: 'Business Verticals' },
+                        { id: 'locations', icon: <MapPin size={18} />, label: 'Service Locations' },
                     ].map(item => (
                         <button key={item.id} onClick={() => setTab(item.id as any)} style={{
                             display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
@@ -438,25 +444,25 @@ export default function AdminPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                             <h2 style={{ fontSize: '1.125rem' }}>Registered Shop Owners</h2>
                             <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
-                                {['Yavatmal', 'All'].map(c => (
-                                    <button 
-                                        key={c}
-                                        onClick={() => setSelectedCity(c)}
-                                        style={{ 
-                                            padding: '0.4rem 1rem', 
-                                            borderRadius: 8, 
-                                            border: 'none', 
-                                            fontSize: '0.75rem', 
-                                            fontWeight: 700, 
-                                            cursor: 'pointer',
-                                            background: selectedCity === c ? '#fff' : 'transparent',
-                                            boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                            color: selectedCity === c ? '#0f172a' : '#64748b'
-                                        }}
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
+                                {Array.from(new Set(locations.flatMap(l => l.cities).concat('All'))).map(c => (
+                                     <button 
+                                         key={c}
+                                         onClick={() => setSelectedCity(c)}
+                                         style={{ 
+                                             padding: '0.4rem 1rem', 
+                                             borderRadius: 8, 
+                                             border: 'none', 
+                                             fontSize: '0.75rem', 
+                                             fontWeight: 700, 
+                                             cursor: 'pointer',
+                                             background: selectedCity === c ? '#fff' : 'transparent',
+                                             boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                             color: selectedCity === c ? '#0f172a' : '#64748b'
+                                         }}
+                                     >
+                                         {c}
+                                     </button>
+                                 ))}
                             </div>
                         </div>
 
@@ -505,7 +511,7 @@ export default function AdminPage() {
                             <h2 style={{ fontSize: '1.125rem' }}>Wholesale Agencies</h2>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
-                                    {['Yavatmal', 'All'].map(c => (
+                                    {Array.from(new Set(locations.flatMap(l => l.cities).concat('All'))).map(c => (
                                         <button 
                                             key={c}
                                             onClick={() => setSelectedCity(c)}
@@ -602,6 +608,61 @@ export default function AdminPage() {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── LOCATIONS (Service Areas) ── */}
+                {tab === 'locations' && (
+                    <div style={{ animation: 'fadeUp 0.35s ease both' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h2 style={{ fontSize: '1.125rem' }}>Manage Delivery Locations</h2>
+                            <button onClick={() => { setSelected(null); setModal('location'); }} style={{ padding: '0.6rem 1.25rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Plus size={16} /> Add New State/City</button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
+                            {locations.length === 0 ? (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: '#fff', borderRadius: 20, border: '1.5px dashed #e2e8f0', color: '#94a3b8' }}>
+                                    <MapPin size={40} strokeWidth={1} style={{ marginBottom: '1rem' }} />
+                                    <p>No locations registered yet. Add Maharashtra and Yavatmal to get started.</p>
+                                </div>
+                            ) : locations.map(loc => (
+                                <div key={loc._id} style={{ background: '#fff', borderRadius: 24, padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid #f8fafc' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>State</div>
+                                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{loc.state}</h3>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button onClick={() => { setSelected(loc); setModal('location'); }} style={{ padding: '0.4rem', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                            <button onClick={async () => {
+                                                if (confirm(`Delete entire state ${loc.state} and all its cities?`)) {
+                                                    await apiFetch('/api/admin/locations', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: loc._id }) });
+                                                    load();
+                                                }
+                                            }} style={{ padding: '0.4rem', borderRadius: 8, background: '#fff5f5', border: '1px solid #fed7d7', color: '#f56565', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Serving Cities ({loc.cities.length})</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            {loc.cities.map(city => (
+                                                <div key={city} style={{ background: '#f1f5f9', color: '#475569', padding: '0.4rem 0.75rem', borderRadius: 10, fontSize: '0.8125rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    {city}
+                                                    <X size={12} style={{ cursor: 'pointer', color: '#94a3b8' }} onClick={async () => {
+                                                        if (confirm(`Remove ${city} from ${loc.state}?`)) {
+                                                            await apiFetch('/api/admin/locations', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: loc.state, city }) });
+                                                            load();
+                                                        }
+                                                    }} />
+                                                </div>
+                                            ))}
+                                            <button onClick={() => { setSelected({ ...loc, addCity: true }); setModal('location'); }} style={{ padding: '0.4rem 0.75rem', border: '1.5px dashed #e2e8f0', borderRadius: 10, background: 'transparent', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>+ Add City</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -785,13 +846,13 @@ export default function AdminPage() {
                         <SI label="Address"><Inp name="address" defaultValue={selected.address} required /></SI>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <SI label="State">
-                                <select name="state" defaultValue={selected.state || 'Maharashtra'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                                    <option value="Maharashtra">Maharashtra</option>
+                                <select name="state" defaultValue={selected.state || locations[0]?.state} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    {locations.map(l => <option key={l._id} value={l.state}>{l.state}</option>)}
                                 </select>
                             </SI>
                             <SI label="City">
-                                <select name="city" defaultValue={selected.city || 'Yavatmal'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                                    <option value="Yavatmal">Yavatmal</option>
+                                <select name="city" defaultValue={selected.city} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    {locations.flatMap(l => l.cities).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </SI>
                         </div>
@@ -820,13 +881,13 @@ export default function AdminPage() {
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <SI label="State">
-                                <select name="state" defaultValue={selected?.state || 'Maharashtra'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                                    <option value="Maharashtra">Maharashtra</option>
+                                <select name="state" defaultValue={selected?.state || locations[0]?.state} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    {locations.map(l => <option key={l._id} value={l.state}>{l.state}</option>)}
                                 </select>
                             </SI>
                             <SI label="City">
-                                <select name="city" defaultValue={selected?.city || 'Yavatmal'} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                                    <option value="Yavatmal">Yavatmal</option>
+                                <select name="city" defaultValue={selected?.city} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
+                                    {locations.flatMap(l => l.cities).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </SI>
                         </div>
@@ -877,6 +938,32 @@ export default function AdminPage() {
                         </div>
                         <SI label="Description"><Inp name="description" defaultValue={selected?.description} /></SI>
                         <button type="submit" style={{ padding: '0.875rem', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>{selected ? 'Update Vertical' : 'Create Vertical'}</button>
+                    </form>
+                </Modal>
+            )}
+
+            {/* ── MODAL: Location (Add/Edit) ── */}
+            {modal === 'location' && (
+                <Modal title={selected?.addCity ? `Add City to ${selected.state}` : (selected ? 'Edit State' : 'Register New State')} onClose={() => setModal(null)}>
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        const body = { 
+                            state: selected?.addCity ? selected.state : f.get('state'), 
+                            city: f.get('city'),
+                            id: selected?._id,
+                            is_active: true 
+                        };
+                        const url = '/api/admin/locations';
+                        const method = selected?.addCity ? 'POST' : (selected ? 'PATCH' : 'POST');
+                        const res = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                        if (res.ok) { setModal(null); load(); } else { alert('Error saving location'); }
+                    }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {!selected?.addCity && <SI label="State Name"><Inp name="state" defaultValue={selected?.state} required /></SI>}
+                        {selected?.addCity || !selected ? <SI label="Initial City Name"><Inp name="city" required /></SI> : null}
+                        <button type="submit" style={{ padding: '0.875rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem' }}>
+                            {selected?.addCity ? 'Add City' : (selected ? 'Update State' : 'Register State')}
+                        </button>
                     </form>
                 </Modal>
             )}
