@@ -33,12 +33,13 @@ export async function PATCH(req: Request) {
     try {
         await dbConnect();
         const { orderId, ...updates } = await req.json();
-        const order = await Order.findByIdAndUpdate(orderId, updates, { new: true });
+        const order = await Order.findByIdAndUpdate(orderId, { $set: updates }, { new: true });
         return NextResponse.json({ success: true, order });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
 export async function DELETE(req: Request) {
     const session = getAuthSession(req);
     if (!session || session.role !== 'admin') {

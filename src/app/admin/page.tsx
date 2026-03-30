@@ -64,6 +64,7 @@ export default function AdminPage() {
     const [selectedCity, setSelectedCity] = useState('All');
     const [orderFilter, setOrderFilter] = useState('All');
     const [paymentFilter, setPaymentFilter] = useState('All');
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const load = async () => {
         setLoading(true); setLoadError(false);
@@ -98,14 +99,21 @@ export default function AdminPage() {
     }, [selected, modal, orders]);
 
     const updateOrder = async (orderId: string, updates: any) => {
+        setUpdatingId(orderId);
         try {
-            await apiFetch('/api/admin/orders', { 
+            const res = await apiFetch('/api/admin/orders', { 
                 method: 'PATCH', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ orderId, ...updates }) 
             });
-            load();
-        } catch (err) { alert('Failed to update order'); }
+            if (res.ok) {
+                await load();
+            } else {
+                const d = await res.json();
+                alert(`Error: ${d.error || 'Failed to update order'}`);
+            }
+        } catch (err) { alert('Network Error updating order'); }
+        setUpdatingId(null);
     };
 
     const deleteItem = async (type: string, id: string) => {
@@ -330,16 +338,23 @@ export default function AdminPage() {
                 {/* ── ORDERS ── */}
                 {tab === 'orders' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 12, gap: '0.25rem' }}>
-                                {['All', 'Pending', 'Processing', 'Delivered'].map(f => (
-                                    <button key={f} onClick={() => setOrderFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: orderFilter === f ? '#fff' : 'transparent', color: orderFilter === f ? '#0f172a' : '#64748b', boxShadow: orderFilter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>{f}</button>
-                                ))}
+                        {/* Filters Filters */}
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center', background: '#fff', padding: '1rem', borderRadius: 20, border: '1px solid #f1f5f9' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Order Status View</label>
+                                <div style={{ display: 'flex', background: '#f8fafc', padding: '0.25rem', borderRadius: 12, gap: '0.25rem', border: '1px solid #f1f5f9' }}>
+                                    {['All', 'Pending', 'Processing', 'Delivered'].map(f => (
+                                        <button key={f} onClick={() => setOrderFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: orderFilter === f ? '#0f172a' : 'transparent', color: orderFilter === f ? '#fff' : '#64748b', transition: 'all 0.2s', boxShadow: orderFilter === f ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}>{f}</button>
+                                    ))}
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 12, gap: '0.25rem' }}>
-                                {['All', 'Unpaid', 'Paid'].map(f => (
-                                    <button key={f} onClick={() => setPaymentFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: paymentFilter === f ? '#fff' : 'transparent', color: paymentFilter === f ? '#0f172a' : '#64748b', boxShadow: paymentFilter === f ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>{f === 'All' ? 'Payment: All' : f}</button>
-                                ))}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Payment Ledger</label>
+                                <div style={{ display: 'flex', background: '#f8fafc', padding: '0.25rem', borderRadius: 12, gap: '0.25rem', border: '1px solid #f1f5f9' }}>
+                                    {['All', 'Unpaid', 'Paid'].map(f => (
+                                        <button key={f} onClick={() => setPaymentFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: paymentFilter === f ? '#16a34a' : 'transparent', color: paymentFilter === f ? '#fff' : '#64748b', transition: 'all 0.2s', boxShadow: paymentFilter === f ? '0 4px 12px rgba(22,163,74,0.1)' : 'none' }}>{f === 'All' ? 'Every Order' : f}</button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -348,9 +363,9 @@ export default function AdminPage() {
                             (orderFilter === 'All' || o.status === orderFilter) &&
                             (paymentFilter === 'All' || o.payment_status === paymentFilter)
                         ).length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
-                                <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                                <p>No orders match the current filters.</p>
+                            <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 24, color: '#94a3b8', background: '#fff' }}>
+                                <ShoppingBag size={48} strokeWidth={1} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                                <p style={{ fontWeight: 600 }}>No matching orders found.</p>
                             </div>
                         ) : (
                             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
@@ -368,50 +383,61 @@ export default function AdminPage() {
                                                 (o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
                                                 (orderFilter === 'All' || o.status === orderFilter) &&
                                                 (paymentFilter === 'All' || o.payment_status === paymentFilter)
-                                            ).map(o => (
-                                                <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <div style={{ fontWeight: 800, fontSize: '0.9375rem', color: '#0f172a' }}>{o.user_id?.name || '—'}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{o.user_id?.phone || ''}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>{o.user_id?.address || ''}</div>
-                                                    </td>
-                                                    <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem' }}>{o.order_id?.slice(-8) || o._id.slice(-8)}</td>
-                                                    <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8125rem' }}>{o.vendor_id?.store_name || '—'}</td>
-                                                    <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{o.products?.length || 0} SKU</td>
-                                                    <td style={{ padding: '1rem', fontWeight: 700 }}>₹{o.total_amount}</td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        {(o as any).payment_method === 'Online'
-                                                            ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#2563eb', fontWeight: 700, fontSize: '0.8rem' }}><CreditCard size={13} /> Online</span>
-                                                            : <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#d97706', fontWeight: 700, fontSize: '0.8rem' }}><Banknote size={13} /> Cash</span>
-                                                        }
-                                                    </td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            <Badge status={o.payment_status} />
-                                                            {o.payment_status === 'Unpaid' && (
-                                                                <button onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} style={{ padding: '0.3rem 0.5rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Mark Paid</button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            <Badge status={o.status} />
-                                                            {o.status === 'Pending' && (
-                                                                <button onClick={() => updateOrder(o._id, { status: 'Accepted' })} style={{ padding: '0.3rem 0.5rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Accept Order</button>
-                                                            )}
-                                                            {o.status === 'Accepted' && (
-                                                                <button onClick={() => updateOrder(o._id, { status: 'Delivered' })} style={{ padding: '0.3rem 0.5rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Mark Delivered</button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem' }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
-                                                    <td style={{ padding: '1rem' }}>
-                                                        <button onClick={() => { setSelected(o); setModal('orderDetails'); }} style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                                                            <Eye size={14} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            ).map(o => {
+                                                const isUpdating = updatingId === o._id;
+                                                return (
+                                                    <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ fontWeight: 800, fontSize: '0.9375rem', color: '#0f172a' }}>{o.user_id?.name || '—'}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>📞 {o.user_id?.phone || ''}</div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>#{o.order_id?.slice(-8).toUpperCase() || o._id.slice(-8).toUpperCase()}</td>
+                                                        <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8125rem', fontWeight: 600 }}>{o.vendor_id?.store_name || 'Direct'}</td>
+                                                        <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{o.products?.length || 0} Items</td>
+                                                        <td style={{ padding: '1rem', fontWeight: 900, color: '#0f172a' }}>₹{o.total_amount}</td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            {(o as any).payment_method === 'Online'
+                                                                ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#2563eb', fontWeight: 800, fontSize: '0.75rem', background: '#eff6ff', padding: '0.25rem 0.6rem', borderRadius: 8 }}>ONLINE</span>
+                                                                : <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#d97706', fontWeight: 800, fontSize: '0.75rem', background: '#fffbeb', padding: '0.25rem 0.6rem', borderRadius: 8 }}>CASH</span>
+                                                            }
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <Badge status={o.payment_status} />
+                                                                {o.payment_status === 'Unpaid' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} 
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Mark as Paid'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <Badge status={o.status} />
+                                                                {o.status === 'Pending' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })} 
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Accept Order'}
+                                                                    </button>
+                                                                )}
+                                                                {o.status === 'Accepted' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })} 
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Deliver Order'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem', fontWeight: 600 }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <button onClick={() => { setSelected(o); setModal('orderDetails'); }} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                                                                <Eye size={16} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
