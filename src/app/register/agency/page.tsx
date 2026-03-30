@@ -15,7 +15,7 @@ export default function VendorRegistration() {
     const [form, setForm] = useState({
         name: '', store_name: '', store_address: '', gst_number: '',
         turnover: '', phone: '', alternate_phone: '', email: '', password: '',
-        state: 'Maharashtra', city: 'Yavatmal'
+        state: '', city: ''
     });
 
     useEffect(() => {

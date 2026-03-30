@@ -22,7 +22,7 @@ const BUSINESS_TYPES = [
 export default function UserRegistration() {
     const router = useRouter();
     const [locations, setLocations] = useState<any[]>([]);
-    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store', state: 'Maharashtra', city: 'Yavatmal' });
+    const [form, setForm] = useState({ name: '', phone: '', address: '', password: '', business_type: 'Kirana Store', state: '', city: '' });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');

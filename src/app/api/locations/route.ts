@@ -5,7 +5,14 @@ import Location from '@/models/Location';
 export async function GET() {
     try {
         await dbConnect();
-        const locations = await Location.find({ is_active: true }).sort({ state: 1 });
+        let locations = await Location.find({ is_active: true }).sort({ state: 1 });
+        
+        // Auto-seed if empty
+        if (locations.length === 0) {
+            await Location.create({ state: 'Maharashtra', cities: ['Yavatmal'], is_active: true });
+            locations = await Location.find({ is_active: true }).sort({ state: 1 });
+        }
+        
         return NextResponse.json(locations);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
