@@ -39,3 +39,18 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+export async function DELETE(req: Request) {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        await dbConnect();
+        const { orderId } = await req.json();
+        await Order.findByIdAndDelete(orderId);
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

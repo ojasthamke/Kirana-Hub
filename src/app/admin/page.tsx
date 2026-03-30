@@ -101,6 +101,7 @@ export default function AdminPage() {
         if (type === 'users') idField = 'userId';
         if (type === 'agencies') idField = 'vendorId';
         if (type === 'products') idField = 'productId';
+        if (type === 'orders') idField = 'orderId';
 
         const res = await apiFetch(`/api/admin/${type}`, { 
             method: 'DELETE', 
@@ -552,10 +553,18 @@ export default function AdminPage() {
                                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Placed On</div>
                                 <div style={{ fontSize: '0.9375rem', fontWeight: 700 }}>{new Date(selected.createdAt).toLocaleString('en-IN')}</div>
                             </div>
-                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
-                                <Badge status={selected.status} />
-                                <Badge status={selected.payment_status} />
-                            </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
+                                    <Badge status={selected.status} />
+                                    <Badge status={selected.payment_status} />
+                                    <button onClick={() => { deleteItem('orders', selected._id); setModal(null); }} style={{ 
+                                        marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', 
+                                        padding: '0.5rem 0.875rem', borderRadius: 10, background: '#fee2e2', 
+                                        color: '#dc2626', border: '1.5px solid #fecaca', fontSize: '0.75rem', 
+                                        fontWeight: 800, cursor: 'pointer' 
+                                    }}>
+                                        <Trash2 size={13} /> Delete Order
+                                    </button>
+                                </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

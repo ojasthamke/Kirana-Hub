@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Package, Loader2, Calendar, Banknote, CreditCard, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Package, Loader2, Calendar, Banknote, CreditCard, RefreshCw, Trash2, Edit2, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
@@ -37,6 +37,8 @@ export default function UserOrders() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [editId, setEditId] = useState<string | null>(null);
+    const [editingProducts, setEditingProducts] = useState<any[]>([]);
 
     const loadOrders = async () => {
         setError('');
@@ -57,6 +59,32 @@ export default function UserOrders() {
             setError('Could not load orders. Please try again.');
         }
         setLoading(false);
+    };
+
+    const cancelOrder = async (id: string) => {
+        if (!confirm('Cancel this order?')) return;
+        await apiFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Cancelled' }) });
+        loadOrders();
+    };
+
+    const startEdit = (o: Order) => {
+        setEditId(o._id);
+        setEditingProducts(JSON.parse(JSON.stringify(o.products)));
+    };
+
+    const saveEdit = async (orderId: string) => {
+        await apiFetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: editingProducts }) });
+        setEditId(null);
+        loadOrders();
+    };
+
+    const updateQty = (idx: number, q: number) => {
+        const u = [...editingProducts];
+        const p = u[idx];
+        if (q < (p.minQty || 1)) return;
+        p.quantity = q;
+        p.total = p.price * q;
+        setEditingProducts(u);
     };
 
     useEffect(() => {
@@ -126,7 +154,19 @@ export default function UserOrders() {
                                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>Order ID</div>
                                         <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'monospace' }}>#{o.order_id?.slice(-8) || o._id.slice(-8)}</div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                        {o.status === 'Pending' && editId !== o._id && (
+                                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                <button onClick={() => startEdit(o)} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Edit2 size={12} /> Edit</button>
+                                                <button onClick={() => cancelOrder(o._id)} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Trash2 size={12} /> Cancel</button>
+                                            </div>
+                                        )}
+                                        {editId === o._id && (
+                                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                <button onClick={() => saveEdit(o._id)} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: 'none', background: '#16a34a', color: '#fff', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Check size={12} /> Save</button>
+                                                <button onClick={() => setEditId(null)} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><X size={12} /> Exit</button>
+                                            </div>
+                                        )}
                                         <Badge s={o.status} />
                                         <Badge s={o.payment_status} />
                                     </div>
@@ -179,7 +219,7 @@ export default function UserOrders() {
                                         <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>{o.products?.length} Items</div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-                                        {o.products?.map((p: any, i: number) => (
+                                        {(editId === o._id ? editingProducts : o.products)?.map((p: any, i: number) => (
                                             <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.25rem 0' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flex: 1 }}>
                                                     <div style={{ width: 42, height: 42, borderRadius: 10, background: '#fff', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
@@ -191,13 +231,21 @@ export default function UserOrders() {
                                                     </div>
                                                     <div>
                                                         <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{p.name}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>Wholesale Price: ₹{p.price}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>Price: ₹{p.price}</div>
                                                     </div>
                                                 </div>
                                                 <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '2rem' }}>
                                                     <div style={{ textAlign: 'center', minWidth: '60px' }}>
                                                         <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Qty</div>
-                                                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#475569' }}>{p.quantity}</div>
+                                                        {editId === o._id ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '0.2rem' }}>
+                                                                <button onClick={() => updateQty(i, p.quantity - 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b' }}>-</button>
+                                                                <span style={{ fontSize: '0.875rem', fontWeight: 900, minWidth: 20 }}>{p.quantity}</span>
+                                                                <button onClick={() => updateQty(i, p.quantity + 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b' }}>+</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#475569' }}>{p.quantity}</div>
+                                                        )}
                                                     </div>
                                                     <div style={{ textAlign: 'right', minWidth: '80px' }}>
                                                         <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Subtotal</div>
