@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Phone, Lock, ChevronRight, Store, ShieldCheck, User } from 'lucide-react';
 
@@ -16,12 +16,26 @@ export default function LoginClient() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [serverUrl, setServerUrl] = useState('https://kiranahub.vercel.app');
+
+    // Persistence: Remember the user's manual IP on the phone
+    useEffect(() => {
+        const saved = localStorage.getItem('debug_server_url');
+        if (saved) setServerUrl(saved);
+        else if (process.env.NEXT_PUBLIC_API_URL) setServerUrl(process.env.NEXT_PUBLIC_API_URL);
+    }, []);
+
+    const updateUrl = (url: string) => {
+        setServerUrl(url);
+        localStorage.setItem('debug_server_url', url);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true); setError('');
         try {
-            const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/login', {
+            const apiBase = serverUrl.replace(/\/$/, ""); 
+            const res = await fetch(`${apiBase}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include', // Needed for cross-origin cookies
@@ -147,6 +161,18 @@ export default function LoginClient() {
                             }
                         </div>
                     )}
+
+                    {/* DEBUG: Backend URL Switcher */}
+                    <div style={{ marginTop: '2rem', padding: '1rem', borderTop: '1px dashed var(--gray-200)', opacity: 0.6 }}>
+                        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--gray-400)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Debug: Server IP (Local Testing)</p>
+                        <input 
+                            style={{ width: '100%', fontSize: '0.8rem', padding: '0.4rem', border: '1px solid var(--gray-200)', borderRadius: 4 }}
+                            value={serverUrl} 
+                            onChange={(e) => updateUrl(e.target.value)} 
+                            placeholder="http://10.148.111.4:3000"
+                        />
+                        <p style={{ fontSize: '0.6rem', marginTop: '0.3rem', color: 'var(--gray-400)' }}>Your Laptop IP: 10.148.111.4</p>
+                    </div>
                 </div>
             </div>
         </div>
