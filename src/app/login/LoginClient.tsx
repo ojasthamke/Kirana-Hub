@@ -18,6 +18,16 @@ export default function LoginClient() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+    // Diagnostic Check: Verify API Reachability on mount
+    useEffect(() => {
+        const url = getApiUrl('/api/auth/login');
+        fetch(url).then(r => r.json()).then(d => {
+            if (d.ok) setApiStatus('online');
+            else setApiStatus('offline');
+        }).catch(() => setApiStatus('offline'));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,10 +47,13 @@ export default function LoginClient() {
             } catch (jsonErr) {
                 console.error('Invalid JSON Response:', text);
                 const isHtml = text.trim().startsWith('<');
+                const titleMatch = text.match(/<title>(.*?)<\/title>/);
+                const title = titleMatch ? ` [Page Title: ${titleMatch[1]}]` : '';
+                
                 if (isHtml) {
-                    setError(`Network Misconfiguration: The server at ${url} returned an HTML page instead of API data. This usually means a 404 or a redirect is happening. Check your API_BASE URL.`);
+                    setError(`[v1.1] Network Misconfiguration: The server at ${url} returned an HTML page instead of API data.${title} This usually means a 404 or a redirect is happening.`);
                 } else {
-                    setError(`Server Error: Invalid response format. Received status ${res.status}.`);
+                    setError(`[v1.1] Server Error: Received status ${res.status}. Output snippet: ${text.substring(0, 30)}...`);
                 }
                 return;
             }
@@ -98,14 +111,27 @@ export default function LoginClient() {
                     ))}
                 </div>
 
-                {/* Form */}
-                <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-200)', padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                {/* Diagnostic Badge */}
+                <div style={{ 
+                    marginBottom: '1rem', padding: '0.625rem 1rem', borderRadius: 12, 
+                    background: apiStatus === 'online' ? '#f0fdf4' : apiStatus === 'offline' ? '#fef2f2' : '#f8fafc',
+                    border: '1px solid', borderColor: apiStatus === 'online' ? '#bbf7d0' : apiStatus === 'offline' ? '#fecaca' : '#f1f5f9',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem'
+                }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: apiStatus === 'online' ? '#22c55e' : apiStatus === 'offline' ? '#ef4444' : '#94a3b8', animation: apiStatus === 'checking' ? 'pulse 1s infinite' : 'none' }}></div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: apiStatus === 'online' ? '#166534' : apiStatus === 'offline' ? '#991b1b' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Backend Status: {apiStatus.toUpperCase()}
+                    </span>
+                    {apiStatus === 'offline' && <span style={{ fontSize: '0.6rem', color: '#dc2626' }}>(Check Link)</span>}
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ background: 'var(--white)', padding: '2rem', borderRadius: 24, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
                     {error && (
                         <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#ef4444', fontSize: '0.875rem', fontWeight: 500 }}>
                             {error}
                         </div>
                     )}
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                             <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gray-500)' }}>
                                 {role === 'admin' ? 'Admin ID' : 'Phone Number'}
@@ -151,9 +177,8 @@ export default function LoginClient() {
                             {loading ? 'Signing in...' : 'Sign In'}
                             {!loading && <ChevronRight size={18} />}
                         </button>
-                    </form>
+                    </div>
 
-                    {/* Footer links — NO sign up for admin */}
                     {role !== 'admin' && (
                         <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--gray-100)', textAlign: 'center', fontSize: '0.875rem', color: 'var(--gray-500)' }}>
                             {role === 'vendor'
@@ -162,7 +187,7 @@ export default function LoginClient() {
                             }
                         </div>
                     )}
-                </div>
+                </form>
             </div>
         </div>
     );
