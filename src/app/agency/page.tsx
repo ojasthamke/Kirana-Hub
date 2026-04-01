@@ -398,9 +398,9 @@ export default function AgencyPage() {
                                     </button>
                                 )}
                                 {o.status === 'Accepted' && (
-                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Processing' })} 
-                                        style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}>
-                                        {isUpdating ? 'Wait...' : 'Start Logic'}
+                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })} 
+                                        style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                        {isUpdating ? 'Wait...' : 'Deliver Order'}
                                     </button>
                                 )}
                               </div>

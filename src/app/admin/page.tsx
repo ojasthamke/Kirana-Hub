@@ -373,7 +373,7 @@ export default function AdminPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Order Status View</label>
                                 <div style={{ display: 'flex', background: '#f8fafc', padding: '0.25rem', borderRadius: 12, gap: '0.25rem', border: '1px solid #f1f5f9' }}>
-                                    {['All', 'Pending', 'Processing', 'Delivered'].map(f => (
+                                    {['All', 'Pending', 'Accepted', 'Delivered'].map(f => (
                                         <button key={f} onClick={() => setOrderFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: 10, border: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', background: orderFilter === f ? '#0f172a' : 'transparent', color: orderFilter === f ? '#fff' : '#64748b', transition: 'all 0.2s', boxShadow: orderFilter === f ? '0 4px 12px rgba(0,0,0,0.1)' : 'none' }}>{f}</button>
                                     ))}
                                 </div>
