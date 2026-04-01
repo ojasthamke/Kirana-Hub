@@ -539,19 +539,40 @@ export default function AgencyPage() {
                 <div style={{ border: '1.5px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead style={{ background: '#f8fafc' }}>
-                            <tr style={{ fontSize: '0.75rem' }}><th style={{ padding: '0.5rem', textAlign: 'left' }}>Item</th><th style={{ padding: '0.5rem' }}>Qty</th><th style={{ padding: '0.5rem', textAlign: 'right' }}>Total</th></tr>
+                            <tr style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Item Details</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Price</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Qty</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Total</th>
+                            </tr>
                         </thead>
                         <tbody>
                             {selectedOrder.products.map((p: any, i: number) => (
-                                <tr key={i} style={{ borderBottom: '1px solid #f8fafc', fontSize: '0.85rem' }}>
-                                    <td style={{ padding: '0.5rem', fontWeight: 600 }}>{p.name || p.name_en}</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>{p.quantity}</td>
-                                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>₹{p.total}</td>
+                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '0.75rem 1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            {p.image_url ? (
+                                                <img src={p.image_url} alt={p.name_en || p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
+                                            ) : (
+                                                <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0' }} />
+                                            )}
+                                            <div>
+                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || 'Product'}</div>
+                                                {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>₹{p.price}</td>
+                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.quantity}</td>
+                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '0.9rem', color: '#0f172a' }}>₹{p.total}</td>
                                 </tr>
                             ))}
                         </tbody>
                         <tfoot style={{ background: '#0f172a', color: '#fff' }}>
-                            <tr><td colSpan={2} style={{ padding: '0.5rem', fontWeight: 700 }}>Total</td><td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 800 }}>₹{selectedOrder.total_amount}</td></tr>
+                            <tr>
+                                <td colSpan={3} style={{ padding: '0.875rem 1rem', fontWeight: 700 }}>Grand Total</td>
+                                <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '1.25rem' }}>₹{selectedOrder.total_amount}</td>
+                            </tr>
                         </tfoot>
                     </table>
                 </div>

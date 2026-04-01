@@ -68,7 +68,7 @@ export default function AdminPage() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
     const load = async (isBackground = false) => {
-        if (!isBackground) setLoading(true); 
+        if (!isBackground) setLoading(true);
         setLoadError(false);
         try {
             const [ur, ar, or, pr, vr, lr] = await Promise.all([
@@ -108,10 +108,10 @@ export default function AdminPage() {
     const updateOrder = async (orderId: string, updates: any) => {
         setUpdatingId(orderId);
         try {
-            const res = await apiFetch('/api/admin/orders', { 
-                method: 'PATCH', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ orderId, ...updates }) 
+            const res = await apiFetch('/api/admin/orders', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId, ...updates })
             });
             if (res.ok) {
                 await load();
@@ -126,10 +126,10 @@ export default function AdminPage() {
     const updateVendor = async (vendorId: string, updates: any) => {
         setUpdatingId(vendorId);
         try {
-            const res = await apiFetch('/api/admin/agencies', { 
-                method: 'PATCH', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ vendorId, ...updates }) 
+            const res = await apiFetch('/api/admin/agencies', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vendorId, ...updates })
             });
             if (res.ok) await load();
             else {
@@ -142,19 +142,19 @@ export default function AdminPage() {
 
     const deleteItem = async (type: string, id: string) => {
         if (!confirm('Are you sure?')) return;
-        
+
         let idField = 'id';
         if (type === 'users') idField = 'userId';
         if (type === 'agencies') idField = 'vendorId';
         if (type === 'products') idField = 'productId';
         if (type === 'orders') idField = 'orderId';
 
-        const res = await apiFetch(`/api/admin/${type}`, { 
-            method: 'DELETE', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ [idField]: id }) 
+        const res = await apiFetch(`/api/admin/${type}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [idField]: id })
         });
-        
+
         if (res.ok) load();
         else alert('Failed to delete item.');
     };
@@ -251,7 +251,7 @@ export default function AdminPage() {
                 {/* ── OVERVIEW ── */}
                 {tab === 'overview' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeUp 0.35s ease both' }}>
-                        
+
                         {/* Primary Stats Grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             {[
@@ -273,14 +273,14 @@ export default function AdminPage() {
 
                         {/* Mid-Section: Insights & Activity */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
-                            
+
                             {/* Order Dynamics */}
                             <div style={{ background: '#fff', padding: '2rem', borderRadius: 28, border: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <h3 style={{ fontSize: '1.125rem', fontWeight: 800 }}>Order Velocity</h3>
                                     <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Real-time Distribution</div>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {ORDER_STATUSES.map(s => {
                                         const count = orders.filter(o => o.status === s).length;
@@ -388,7 +388,7 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {orders.filter(o => 
+                        {orders.filter(o =>
                             (o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
                             (orderFilter === 'All' || o.status === orderFilter) &&
                             (paymentFilter === 'All' || o.payment_status === paymentFilter)
@@ -409,7 +409,7 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {orders.filter(o => 
+                                            {orders.filter(o =>
                                                 (o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || o.user_id?.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
                                                 (orderFilter === 'All' || o.status === orderFilter) &&
                                                 (paymentFilter === 'All' || o.payment_status === paymentFilter)
@@ -435,7 +435,7 @@ export default function AdminPage() {
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                                 <Badge status={o.payment_status} />
                                                                 {o.payment_status === 'Unpaid' && (
-                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} 
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })}
                                                                         style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
                                                                         {isUpdating ? 'Wait...' : 'Mark as Paid'}
                                                                     </button>
@@ -446,13 +446,13 @@ export default function AdminPage() {
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                                 <Badge status={o.status} />
                                                                 {o.status === 'Pending' && (
-                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })} 
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })}
                                                                         style={{ padding: '0.4rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}>
                                                                         {isUpdating ? 'Wait...' : 'Accept Order'}
                                                                     </button>
                                                                 )}
                                                                 {o.status === 'Accepted' && (
-                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })} 
+                                                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })}
                                                                         style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
                                                                         {isUpdating ? 'Wait...' : 'Deliver Order'}
                                                                     </button>
@@ -536,24 +536,24 @@ export default function AdminPage() {
                             <h2 style={{ fontSize: '1.125rem' }}>Registered Shop Owners</h2>
                             <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
                                 {Array.from(new Set(locations.flatMap(l => l.cities).concat('All'))).map(c => (
-                                     <button 
-                                         key={c}
-                                         onClick={() => setSelectedCity(c)}
-                                         style={{ 
-                                             padding: '0.4rem 1rem', 
-                                             borderRadius: 8, 
-                                             border: 'none', 
-                                             fontSize: '0.75rem', 
-                                             fontWeight: 700, 
-                                             cursor: 'pointer',
-                                             background: selectedCity === c ? '#fff' : 'transparent',
-                                             boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                                             color: selectedCity === c ? '#0f172a' : '#64748b'
-                                         }}
-                                     >
-                                         {c}
-                                     </button>
-                                 ))}
+                                    <button
+                                        key={c}
+                                        onClick={() => setSelectedCity(c)}
+                                        style={{
+                                            padding: '0.4rem 1rem',
+                                            borderRadius: 8,
+                                            border: 'none',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            background: selectedCity === c ? '#fff' : 'transparent',
+                                            boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                            color: selectedCity === c ? '#0f172a' : '#64748b'
+                                        }}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -619,15 +619,15 @@ export default function AdminPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: 10, gap: '0.25rem' }}>
                                     {Array.from(new Set(locations.flatMap(l => l.cities).concat('All'))).map(c => (
-                                        <button 
+                                        <button
                                             key={c}
                                             onClick={() => setSelectedCity(c)}
-                                            style={{ 
-                                                padding: '0.4rem 1rem', 
-                                                borderRadius: 8, 
-                                                border: 'none', 
-                                                fontSize: '0.75rem', 
-                                                fontWeight: 700, 
+                                            style={{
+                                                padding: '0.4rem 1rem',
+                                                borderRadius: 8,
+                                                border: 'none',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 700,
                                                 cursor: 'pointer',
                                                 background: selectedCity === c ? '#fff' : 'transparent',
                                                 boxShadow: selectedCity === c ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
@@ -652,68 +652,68 @@ export default function AdminPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                            {agencies
-                                                .filter(a => a.store_name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                .filter(a => selectedCity === 'All' || a.city === selectedCity)
-                                                .map(a => {
-                                                    const isUpdating = updatingId === a._id;
-                                                    const agOrders = orders.filter(o => o.vendor_id?._id === a._id);
-                                                    const revenue = agOrders.reduce((sum, o) => sum + o.total_amount, 0);
-                                                    return (
-                                                        <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1 }}>
-                                                            <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>{a.store_name}</td>
-                                                            <td style={{ padding: '1rem', color: '#475569', fontWeight: 600 }}>{a.name}</td>
-                                                            <td style={{ padding: '1rem' }}>
-                                                                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{a.city || 'Yavatmal'}</div>
-                                                                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{a.state || 'Maharashtra'}</div>
-                                                            </td>
-                                                            <td style={{ padding: '1rem' }}>
-                                                                <div style={{ fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>📞 {a.phone}</div>
-                                                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', background: '#f8fafc', padding: '0.2rem 0.4rem', borderRadius: 4, marginTop: '0.25rem', width: 'fit-content' }}>GST: {a.gst_number || 'N/A'}</div>
-                                                            </td>
-                                                            <td style={{ padding: '1rem' }}>
-                                                                <div style={{ fontSize: '0.875rem', fontWeight: 900, color: '#0f172a' }}>₹{revenue.toLocaleString()}</div>
-                                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>{agOrders.length} ORDERS</div>
-                                                            </td>
-                                                            <td style={{ padding: '1rem' }}>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                                    <Badge status={a.status === 'approved' ? 'Delivered' : (a.status === 'blocked' ? 'Cancelled' : 'Pending')} />
-                                                                    {a.status === 'pending' && (
-                                                                        <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'approved' })} 
-                                                                            style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 10px rgba(22,163,74,0.2)' }}>
-                                                                            {isUpdating ? 'Wait...' : 'Approve Agency'}
-                                                                        </button>
-                                                                    )}
-                                                                    {a.status === 'approved' && (
-                                                                        <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'blocked' })} 
-                                                                            style={{ padding: '0.4rem 0.6rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                                            {isUpdating ? 'Wait...' : 'Block Access'}
-                                                                        </button>
-                                                                    )}
-                                                                    {a.status === 'blocked' && (
-                                                                        <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'approved' })} 
-                                                                            style={{ padding: '0.4rem 0.6rem', background: '#eff6ff', color: '#3b82f6', border: '1px solid #dbeafe', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>
-                                                                            {isUpdating ? 'Wait...' : 'Re-Activate'}
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                            <td style={{ padding: '1rem' }}>
-                                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                    <button onClick={() => { setSelected(a); setModal('vendor'); }} style={{ width: 32, height: 32, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit2 size={13} /></button>
-                                                                    <button onClick={() => deleteItem('agencies', a._id)} style={{ width: 32, height: 32, borderRadius: 8, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} /></button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
+                                        {agencies
+                                            .filter(a => a.store_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                            .filter(a => selectedCity === 'All' || a.city === selectedCity)
+                                            .map(a => {
+                                                const isUpdating = updatingId === a._id;
+                                                const agOrders = orders.filter(o => o.vendor_id?._id === a._id);
+                                                const revenue = agOrders.reduce((sum, o) => sum + o.total_amount, 0);
+                                                return (
+                                                    <tr key={a._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1 }}>
+                                                        <td style={{ padding: '1rem', fontWeight: 800, color: '#0f172a' }}>{a.store_name}</td>
+                                                        <td style={{ padding: '1rem', color: '#475569', fontWeight: 600 }}>{a.name}</td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{a.city || 'Yavatmal'}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{a.state || 'Maharashtra'}</div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ fontWeight: 700, color: '#475569', fontSize: '0.85rem' }}>📞 {a.phone}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: '#94a3b8', background: '#f8fafc', padding: '0.2rem 0.4rem', borderRadius: 4, marginTop: '0.25rem', width: 'fit-content' }}>GST: {a.gst_number || 'N/A'}</div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ fontSize: '0.875rem', fontWeight: 900, color: '#0f172a' }}>₹{revenue.toLocaleString()}</div>
+                                                            <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>{agOrders.length} ORDERS</div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                                <Badge status={a.status === 'approved' ? 'Delivered' : (a.status === 'blocked' ? 'Cancelled' : 'Pending')} />
+                                                                {a.status === 'pending' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'approved' })}
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 10px rgba(22,163,74,0.2)' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Approve Agency'}
+                                                                    </button>
+                                                                )}
+                                                                {a.status === 'approved' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'blocked' })}
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Block Access'}
+                                                                    </button>
+                                                                )}
+                                                                {a.status === 'blocked' && (
+                                                                    <button disabled={isUpdating} onClick={() => updateVendor(a._id, { status: 'approved' })}
+                                                                        style={{ padding: '0.4rem 0.6rem', background: '#eff6ff', color: '#3b82f6', border: '1px solid #dbeafe', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>
+                                                                        {isUpdating ? 'Wait...' : 'Re-Activate'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                <button onClick={() => { setSelected(a); setModal('vendor'); }} style={{ width: 32, height: 32, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit2 size={13} /></button>
+                                                                <button onClick={() => deleteItem('agencies', a._id)} style={{ width: 32, height: 32, borderRadius: 8, border: '1.5px solid #fee2e2', background: '#fff', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={13} /></button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 )}
-                
+
                 {/* ── VERTICALS (Business Types) ── */}
                 {tab === 'verticals' && (
                     <div style={{ animation: 'fadeUp 0.35s ease both' }}>
@@ -784,7 +784,7 @@ export default function AdminPage() {
                                             }} style={{ padding: '0.4rem', borderRadius: 8, background: '#fff5f5', border: '1px solid #fed7d7', color: '#f56565', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                         </div>
                                     </div>
-                                    
+
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Serving Cities ({loc.cities.length})</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -818,18 +818,18 @@ export default function AdminPage() {
                                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Placed On</div>
                                 <div style={{ fontSize: '0.9375rem', fontWeight: 700 }}>{new Date(selected.createdAt).toLocaleString('en-IN')}</div>
                             </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
-                                    <Badge status={selected.status} />
-                                    <Badge status={selected.payment_status} />
-                                    <button onClick={() => { deleteItem('orders', selected._id); setModal(null); }} style={{ 
-                                        marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', 
-                                        padding: '0.5rem 0.875rem', borderRadius: 10, background: '#fee2e2', 
-                                        color: '#dc2626', border: '1.5px solid #fecaca', fontSize: '0.75rem', 
-                                        fontWeight: 800, cursor: 'pointer' 
-                                    }}>
-                                        <Trash2 size={13} /> Delete Order
-                                    </button>
-                                </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
+                                <Badge status={selected.status} />
+                                <Badge status={selected.payment_status} />
+                                <button onClick={() => { deleteItem('orders', selected._id); setModal(null); }} style={{
+                                    marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                    padding: '0.5rem 0.875rem', borderRadius: 10, background: '#fee2e2',
+                                    color: '#dc2626', border: '1.5px solid #fecaca', fontSize: '0.75rem',
+                                    fontWeight: 800, cursor: 'pointer'
+                                }}>
+                                    <Trash2 size={13} /> Delete Order
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -852,33 +852,38 @@ export default function AdminPage() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                                     <thead style={{ background: '#f8fafc' }}>
                                         <tr>
-                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Item</th>
-                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Qty</th>
-                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Total</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>Item Details</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>Price</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>Qty</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {selected.products?.map((p: any, i: number) => (
                                             <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                                                <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <td style={{ padding: '0.75rem 1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                         {p.image_url ? (
-                                                            <img src={p.image_url} alt={p.name_en} style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'contain' }} />
+                                                            <img src={p.image_url} alt={p.name_en} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
                                                         ) : (
-                                                            <div style={{ width: 24, height: 24, borderRadius: 4, background: '#f1f5f9' }} />
+                                                            <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0' }} />
                                                         )}
-                                                        <span>{p.name_en || 'Product'}</span>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || 'Product'}</div>
+                                                            {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
+                                                        </div>
                                                     </div>
                                                 </td>
-                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>{p.quantity}</td>
-                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700 }}>₹{p.total}</td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>₹{p.price}</td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.quantity}</td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '0.9rem', color: '#0f172a' }}>₹{p.total}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr style={{ background: '#0f172a', color: '#fff' }}>
-                                            <td colSpan={2} style={{ padding: '0.875rem 1rem', fontWeight: 700 }}>Grand Total</td>
-                                            <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '1rem' }}>₹{selected.total_amount}</td>
+                                            <td colSpan={3} style={{ padding: '0.875rem 1rem', fontWeight: 700 }}>Grand Total</td>
+                                            <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '1.25rem' }}>₹{selected.total_amount}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -968,17 +973,17 @@ export default function AdminPage() {
                     <form onSubmit={async (e) => {
                         e.preventDefault();
                         const f = new FormData(e.currentTarget);
-                        const body = { 
-                            name: f.get('name'), 
-                            phone: f.get('phone'), 
+                        const body = {
+                            name: f.get('name'),
+                            phone: f.get('phone'),
                             address: f.get('address'),
                             state: f.get('state'),
                             city: f.get('city')
                         };
-                        const res = await apiFetch('/api/admin/users', { 
-                            method: 'PATCH', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ userId: selected._id, ...body }) 
+                        const res = await apiFetch('/api/admin/users', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: selected._id, ...body })
                         });
                         if (res.ok) { setModal(null); load(); } else { alert('Error updating user'); }
                     }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1019,7 +1024,7 @@ export default function AdminPage() {
                         <SI label="Agency Head Name"><Inp name="name" defaultValue={selected?.name} required /></SI>
                         <SI label="Store/Agency Name"><Inp name="store_name" defaultValue={selected?.store_name} required /></SI>
                         <SI label="Full Address"><Inp name="store_address" defaultValue={selected?.store_address || selected?.address} required /></SI>
-                        
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <SI label="State">
                                 <select name="state" defaultValue={selected?.state || locations[0]?.state} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
@@ -1089,11 +1094,11 @@ export default function AdminPage() {
                     <form onSubmit={async (e) => {
                         e.preventDefault();
                         const f = new FormData(e.currentTarget);
-                        const body = { 
-                            state: selected?.addCity ? selected.state : f.get('state'), 
+                        const body = {
+                            state: selected?.addCity ? selected.state : f.get('state'),
                             city: f.get('city'),
                             id: selected?._id,
-                            is_active: true 
+                            is_active: true
                         };
                         const url = '/api/admin/locations';
                         const method = selected?.addCity ? 'POST' : (selected ? 'PATCH' : 'POST');
