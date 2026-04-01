@@ -11,18 +11,22 @@ const getBase = () => {
 
         const { origin, protocol, hostname } = window.location;
 
-        // A. Handle standard web browsing
-        if (protocol.startsWith('http')) {
+        // A. Handle standard web browsing (e.g. your-site.vercel.app or localhost:3000 in Chrome)
+        // CRITICAL: We only use 'origin' if it's NOT the internal Capacitor localhost
+        const isInternalMobileHost = (hostname === 'localhost' || hostname === '127.0.0.1');
+
+        if (protocol.startsWith('http') && !isInternalMobileHost) {
             return origin;
         }
 
-        // B. Handle Mobile/Capacitor Environments
-        // If on emulator/localhost within app:
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://10.0.2.2:3000'; // Android emulator bridge
+        // B. Handle Mobile/Capacitor Environments (Emulators)
+        if (isInternalMobileHost) {
+            // Check if we can reach the emulator bridge (Android standard)
+            // But if it's a real device, this will fail and we fallback below.
+            return 'http://10.0.2.2:3000'; 
         }
     }
-    // C. Production Fallback
+    // C. Production Fallback (Real Phones will hit this by default now)
     return 'https://kiranahub.vercel.app';
 };
 

@@ -122,7 +122,28 @@ export default function LoginClient() {
                     <span style={{ fontSize: '0.75rem', fontWeight: 800, color: apiStatus === 'online' ? '#166534' : apiStatus === 'offline' ? '#991b1b' : '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Backend Status: {apiStatus.toUpperCase()}
                     </span>
-                    {apiStatus === 'offline' && <span style={{ fontSize: '0.6rem', color: '#dc2626' }}>(Check Link)</span>}
+                    {apiStatus === 'offline' && (
+                        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '0.6rem', color: '#dc2626' }}>(Check Link)</span>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const ip = prompt("Enter your computer's IP (e.g. 192.168.1.15) if testing locally. Otherwise leave blank for Production.");
+                                    if (ip === null) return;
+                                    if (ip === "") {
+                                        localStorage.removeItem('API_URL_OVERRIDE');
+                                    } else {
+                                        const fullUrl = ip.startsWith('http') ? ip : `http://${ip}:3000`;
+                                        localStorage.setItem('API_URL_OVERRIDE', fullUrl);
+                                    }
+                                    window.location.reload();
+                                }}
+                                style={{ padding: '0.2rem 0.6rem', background: '#fff', border: '1px solid #fecaca', borderRadius: 4, fontSize: '0.6rem', fontWeight: 800, cursor: 'pointer', color: '#991b1b' }}
+                            >
+                                CHANGE SERVER IP
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ background: 'var(--white)', padding: '2rem', borderRadius: 24, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' }}>
