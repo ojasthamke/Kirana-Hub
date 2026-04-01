@@ -9,24 +9,22 @@ const getBase = () => {
         const manualOverride = localStorage.getItem('API_URL_OVERRIDE');
         if (manualOverride) return manualOverride;
 
+        // Strict Mobile/Capacitor App Detection
+        // If we are running inside the Android APK...
+        if ((window as any).Capacitor || window.location.protocol === 'capacitor:') {
+            // Always hit your live server from the mobile app
+            return 'https://kiranahub.vercel.app';
+        }
+
         const { origin, protocol, hostname } = window.location;
 
-        // A. Handle standard web browsing (e.g. your-site.vercel.app or localhost:3000 in Chrome)
-        // CRITICAL: We only use 'origin' if it's NOT the internal Capacitor localhost
+        // Handle standard web browsing on a laptop/PC
         const isInternalMobileHost = (hostname === 'localhost' || hostname === '127.0.0.1');
-
         if (protocol.startsWith('http') && !isInternalMobileHost) {
             return origin;
         }
-
-        // B. Handle Mobile/Capacitor Environments (Emulators)
-        if (isInternalMobileHost) {
-            // Check if we can reach the emulator bridge (Android standard)
-            // But if it's a real device, this will fail and we fallback below.
-            return 'http://10.0.2.2:3000'; 
-        }
     }
-    // C. Production Fallback (Real Phones will hit this by default now)
+    // Production Fallback
     return 'https://kiranahub.vercel.app';
 };
 
