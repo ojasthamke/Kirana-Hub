@@ -20,6 +20,7 @@ export async function GET(req: Request) {
         const orders = await Order.find(filter)
             .populate('vendor_id', 'store_name phone')
             .populate('user_id', 'name phone address')
+            .populate('products.product_id', 'name_en')
             .sort({ createdAt: -1 });
 
         return NextResponse.json(orders);

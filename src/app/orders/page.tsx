@@ -230,7 +230,7 @@ export default function UserOrders() {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{p.name || p.name_en}</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{p.name || p.name_en || p.product_id?.name_en || 'Product'}</div>
                                                         {p.variant_name && (
                                                             <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.15rem 0.4rem', borderRadius: 4, display: 'inline-block', marginTop: 4, marginBottom: 4 }}>
                                                                 {p.variant_name}

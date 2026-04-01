@@ -11,8 +11,9 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **State Management:** `CartContext` (Client) for multi-vendor checkout synchronization.
 - **Authentication:** JWT-based.
   - **Bridge Logic:** Login sets the `token` in `document.cookie` (for server-side pages) and `localStorage` (for client-side/mobile API calls via `Authorization` header).
-- **API Communication:** All requests use `getApiUrl()` to resolve the correct backend. The system detects mobile emulator bridges (10.0.2.2) and allows a `localStorage` override via `API_URL_OVERRIDE` for field debugging without re-building.
-- **Error Resilience:** Clients are programmed to detect HTML-as-JSON responses (which cause the '200 OK' error). If an API call hits a redirect or a 404 page returning HTML, the app provides a descriptive "Network Misconfiguration" warning instead of crashing.
+- **API Communication (Strict Mobile Routing):** All requests use `getApiUrl()` to resolve the correct backend. The system enforces **Strict Capacitor App Detection** (`window.Capacitor`) to instantly force the app to hit the Vercel Production Server. This permanently prevents the "Android localhost loop" (where the phone tries to query its own local storage for a database instead of the live server).
+- **Pro-Level Debugging:** A `localStorage` override via `API_URL_OVERRIDE` is available for field debugging (e.g., pointing a real phone to a PC's local IP like `192.168.1.15:3000` via the "CHANGE SERVER IP" button on the error screen).
+- **Error Resilience:** Clients proactively catch HTML-as-JSON responses (which cause the 'Server Error 200'). If an API call hits a redirect or a 404 block, the app extracts the `<title>` tag of the HTML page and provides a highly descriptive "Network Misconfiguration" warning instead of an arbitrary crash.
 - **Mobile Support:** Capacitor handles hardware back-button navigation (`AppListener.tsx`).
 
 ---

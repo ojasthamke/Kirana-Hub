@@ -869,7 +869,7 @@ export default function AdminPage() {
                                                             <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0' }} />
                                                         )}
                                                         <div>
-                                                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || 'Product'}</div>
+                                                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || p.product_id?.name_en || 'Product'}</div>
                                                             {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
                                                         </div>
                                                     </div>
