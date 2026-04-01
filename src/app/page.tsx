@@ -123,6 +123,22 @@ export default function Home() {
         return matchesCategory && matchesSearch;
     });
 
+    if (fetchError) return (
+        <div style={{ height: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <Info size={32} />
+            </div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Could not load products</h2>
+            <p style={{ color: '#64748b', fontSize: '0.9375rem', maxWidth: '320px', marginBottom: '2rem' }}>
+                The server might be waking up or your link is incorrect. Please check your internet and try again.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => window.location.reload()} style={{ padding: '0.75rem 1.5rem', borderRadius: 12, background: '#0f172a', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>Retry Now</button>
+                <button onClick={() => window.location.href = '/login'} style={{ padding: '0.75rem 1.5rem', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>Switch Account</button>
+            </div>
+        </div>
+    );
+
     if (loading) return (
         <div style={{
             height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'

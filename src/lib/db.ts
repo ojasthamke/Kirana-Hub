@@ -15,9 +15,8 @@ if (!cached) {
 async function dbConnect(): Promise<mongoose.Mongoose | null> {
   const uri = MONGODB_URI?.trim();
 
-  // Connection is mandatory for MongoDB-based features
   if (!uri) {
-    console.warn('⚠️ MONGODB_URI not found. Skipping MongoDB connection.');
+    console.error('❌ CRITICAL: MONGODB_URI is missing in environment variables.');
     return null;
   }
 
@@ -30,23 +29,22 @@ async function dbConnect(): Promise<mongoose.Mongoose | null> {
       bufferCommands: true,
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
       maxPoolSize: 10,
-      minPoolSize: 1,
     };
 
-    console.log('Connecting to MongoDB...');
-    cached.promise = mongoose.connect(uri, opts);
+    console.log('📡 Attempting MongoDB Connection...');
+    cached.promise = mongoose.connect(uri, opts).then((m) => {
+        console.log('✅ MongoDB Connected [Atlas Host]');
+        return m;
+    });
   }
 
   try {
     cached.conn = await cached.promise;
-    console.log('✅ MongoDB connected successfully');
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
+    console.error('❌ MongoDB Connection Failed:', err);
     cached.promise = null;
     cached.conn = null;
-    // We don't throw here to allow building even if DB is down
   }
 
   return cached.conn;

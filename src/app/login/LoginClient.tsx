@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Phone, Lock, ChevronRight, Store, ShieldCheck, User } from 'lucide-react';
 
+import { getApiUrl } from '@/lib/api';
+
 const ROLES = [
     { id: 'user', label: 'Shop Owner', icon: <User size={20} /> },
     { id: 'vendor', label: 'Agency', icon: <Store size={20} /> },
@@ -16,17 +18,16 @@ export default function LoginClient() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const serverUrl = 'https://kiranahub.vercel.app'; // Production server
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true); setError('');
         try {
-            const apiBase = serverUrl.replace(/\/$/, ""); 
-            const res = await fetch(`${apiBase}/api/auth/login`, {
+            const url = getApiUrl('/api/auth/login');
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // Needed for cross-origin cookies
+                credentials: 'include', 
                 body: JSON.stringify({ phone, password, role })
             });
             const text = await res.text();
