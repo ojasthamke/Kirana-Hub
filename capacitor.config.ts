@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'KiranaHub',
   webDir: 'out',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    url: 'https://kiranahub.vercel.app',
+    cleartext: true
   },
   plugins: {
     CapacitorHttp: {
