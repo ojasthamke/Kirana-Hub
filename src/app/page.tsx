@@ -204,22 +204,35 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* ── BOLD STICKY BOTTOM CATEGORY BAR ── */}
-                <div style={{ 
-                    position: 'fixed', bottom: totalItems > 0 ? 70 : 0, left: 0, right: 0, 
-                    zIndex: 150, background: '#fff', borderTop: '1px solid #e2e8f0', 
-                    padding: '0.75rem 1.25rem', paddingBottom: totalItems > 0 ? '0.75rem' : 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
-                    boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
-                    display: 'flex', gap: '0.6rem', overflowX: 'auto', scrollbarWidth: 'none',
-                    transition: 'bottom 0.3s ease'
+                <style>{`
+                    @keyframes slideDownNav {
+                        0% { transform: translateY(-30px); opacity: 0; }
+                        100% { transform: translateY(0); opacity: 1; }
+                    }
+                    .glass-nav::-webkit-scrollbar { display: none; }
+                `}</style>
+
+                {/* ── PREMIUM GLASSMORPHIC STICKY CATEGORY BAR ── */}
+                <div className="glass-nav" style={{ 
+                    position: 'sticky', top: 0, zIndex: 140, 
+                    background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                    padding: '1rem 0', margin: '0 -1.25rem 2rem', paddingLeft: '1.25rem', paddingRight: '1.25rem',
+                    borderBottom: '1px solid rgba(226, 232, 240, 0.6)',
+                    display: 'flex', gap: '0.75rem', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none',
+                    animation: 'slideDownNav 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    boxShadow: '0 4px 24px -6px rgba(0,0,0,0.03)'
                 }}>
                     {categories.map(cat => (
                         <button key={cat} onClick={() => { setFilter(cat); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{
-                            padding: '0.75rem 1.25rem', borderRadius: 14, border: 'none', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', 
-                            fontSize: '0.8125rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em',
-                            background: filter === cat ? '#0f172a' : '#f1f5f9', color: filter === cat ? '#fff' : '#64748b'
+                            padding: '0.75rem 1.25rem', borderRadius: 99, border: '1px solid',
+                            cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', whiteSpace: 'nowrap', 
+                            fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+                            background: filter === cat ? '#0f172a' : 'rgba(255,255,255,0.9)', 
+                            color: filter === cat ? '#fff' : '#475569',
+                            borderColor: filter === cat ? '#0f172a' : 'rgba(226, 232, 240, 0.8)',
+                            boxShadow: filter === cat ? '0 4px 12px rgba(15, 23, 42, 0.15)' : 'none'
                         }}>
-                           {CAT_ICONS[cat] && <span style={{ marginRight: 6 }}>{CAT_ICONS[cat]}</span>}
+                           {CAT_ICONS[cat] && <span style={{ marginRight: 6, fontSize: '1rem' }}>{CAT_ICONS[cat]}</span>}
                            {cat}
                         </button>
                     ))}
