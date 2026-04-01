@@ -238,7 +238,7 @@ export default function Home() {
                     boxShadow: '0 4px 24px -6px rgba(0,0,0,0.03)'
                 }}>
                     {categories.map(cat => (
-                        <button key={cat} onClick={() => { setFilter(cat); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{
+                        <button key={cat} onClick={(e) => { e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); setFilter(cat); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{
                             padding: '0.75rem 1.25rem', borderRadius: 99, border: '1px solid',
                             cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', whiteSpace: 'nowrap', 
                             fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
