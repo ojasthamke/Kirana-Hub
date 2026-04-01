@@ -86,7 +86,27 @@ export default function Home() {
         loadUser();
     }, []);
 
+    // --- SWIPE LOGIC ---
+    const touchStart = useRef(0);
+    const handleTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        const touchEnd = e.changedTouches[0].clientX;
+        const diff = touchStart.current - touchEnd;
+        if (Math.abs(diff) > 70) {
+            const currentIndex = categories.indexOf(filter);
+            if (diff > 0 && currentIndex < categories.length - 1) {
+                setFilter(categories[currentIndex + 1]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (diff < 0 && currentIndex > 0) {
+                setFilter(categories[currentIndex - 1]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    };
+
     const getQty = (id: string, vName?: string) => cart.find(i => i.productId === id && i.variantName === vName)?.quantity || 0;
+
+    // ... handleUpdate ...
 
     const handleUpdate = (p: Product, newQty: number, variant?: Variant) => {
         const vName = variant?.variant_name;
@@ -122,6 +142,8 @@ export default function Home() {
         const matchesSearch = p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.name_hi || '').includes(search);
         return matchesCategory && matchesSearch;
     });
+
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     if (fetchError) return (
         <div style={{ height: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
@@ -164,26 +186,37 @@ export default function Home() {
     );
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '3rem' }}>
+        <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '7rem' }}>
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.25rem' }}>
 
-
-
-                {/* ── SEARCH & FILTER ── */}
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+                {/* ── SEARCH (Now Solo at top) ── */}
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
                     <div style={{ position: 'relative', flex: 1, minWidth: 300 }}>
                         <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                         <input type="text" placeholder="Search brands, products, packaging..." value={search} onChange={e => setSearch(e.target.value)}
                             style={{ width: '100%', padding: '0.875rem 1rem 0.875rem 3.25rem', borderRadius: 16, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: '0.9375rem', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                        {categories.map(cat => (
-                            <button key={cat} onClick={() => setFilter(cat)} style={{
-                                padding: '0.625rem 1.25rem', borderRadius: 14, border: '1.5px solid', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', fontSize: '0.875rem', fontWeight: 700,
-                                borderColor: filter === cat ? '#0f172a' : '#e2e8f0', background: filter === cat ? '#0f172a' : '#fff', color: filter === cat ? '#fff' : '#64748b'
-                            }}>{cat}</button>
-                        ))}
-                    </div>
+                </div>
+
+                {/* ── BOLD STICKY BOTTOM CATEGORY BAR ── */}
+                <div style={{ 
+                    position: 'fixed', bottom: totalItems > 0 ? 70 : 0, left: 0, right: 0, 
+                    zIndex: 150, background: '#fff', borderTop: '1px solid #e2e8f0', 
+                    padding: '0.75rem 1.25rem', paddingBottom: totalItems > 0 ? '0.75rem' : 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+                    boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
+                    display: 'flex', gap: '0.6rem', overflowX: 'auto', scrollbarWidth: 'none',
+                    transition: 'bottom 0.3s ease'
+                }}>
+                    {categories.map(cat => (
+                        <button key={cat} onClick={() => { setFilter(cat); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{
+                            padding: '0.75rem 1.25rem', borderRadius: 14, border: 'none', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', 
+                            fontSize: '0.8125rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em',
+                            background: filter === cat ? '#0f172a' : '#f1f5f9', color: filter === cat ? '#fff' : '#64748b'
+                        }}>
+                           {CAT_ICONS[cat] && <span style={{ marginRight: 6 }}>{CAT_ICONS[cat]}</span>}
+                           {cat}
+                        </button>
+                    ))}
                 </div>
 
                 {/* ── PRODUCT GRID ── */}
