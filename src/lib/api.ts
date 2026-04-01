@@ -6,17 +6,23 @@ const getBase = () => {
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
 
     if (typeof window !== 'undefined') {
-        // 2. LocalStorage override for on-the-fly mobile debugging (Pro Level)
         const manualOverride = localStorage.getItem('API_URL_OVERRIDE');
         if (manualOverride) return manualOverride;
 
-        const { origin, protocol, host } = window.location;
-        if (protocol.startsWith('http')) return origin;
-        
-        // 3. Smart Android/iOS Emulator Fallback
-        if (host === 'localhost') return 'http://10.0.2.2:3000'; // Common Android host bridge
+        const { origin, protocol, hostname } = window.location;
+
+        // A. Handle standard web browsing
+        if (protocol.startsWith('http')) {
+            return origin;
+        }
+
+        // B. Handle Mobile/Capacitor Environments
+        // If on emulator/localhost within app:
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://10.0.2.2:3000'; // Android emulator bridge
+        }
     }
-    // Fallback for production (Vercel)
+    // C. Production Fallback
     return 'https://kiranahub.vercel.app';
 };
 

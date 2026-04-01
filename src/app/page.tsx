@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight, Plus, Briefcase, Filter } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, getApiUrl } from '@/lib/api';
 
 interface Variant {
     variant_name: string;
@@ -150,9 +150,15 @@ export default function Home() {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
                 <Info size={32} />
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Could not load products</h2>
-            <p style={{ color: '#64748b', fontSize: '0.9375rem', maxWidth: '320px', marginBottom: '2rem' }}>
-                The server might be waking up or your link is incorrect. Please check your internet and try again.
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Connection Failed</h2>
+            <p style={{ color: '#64748b', fontSize: '0.9375rem', maxWidth: '380px', marginBottom: '1.5rem' }}>
+                Your app is trying to connect to: <br/>
+                <code style={{ background: '#f1f5f9', padding: '0.2rem 0.4rem', borderRadius: 4, display: 'inline-block', marginTop: '0.5rem', wordBreak: 'break-all', fontSize: '0.8rem', color: '#0f172a' }}>
+                    {getApiUrl('/api/products')}
+                </code>
+            </p>
+            <p style={{ color: '#64748b', fontSize: '0.85rem', maxWidth: '320px', marginBottom: '2rem' }}>
+                If you are on a real phone, this link must be your computer's IP address (e.g. 192.168.x.x).
             </p>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button onClick={() => window.location.reload()} style={{ padding: '0.75rem 1.5rem', borderRadius: 12, background: '#0f172a', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>Retry Now</button>

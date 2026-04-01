@@ -6,7 +6,10 @@ import { getAuthSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
     try {
-        await dbConnect(); // Connect to MongoDB Atlas
+        const conn = await dbConnect();
+        if (!conn) {
+            return NextResponse.json({ error: 'DB_CONNECTION_FAILURE: MONGODB_URI is missing or unreachable.' }, { status: 503 });
+        }
         
         const { searchParams } = new URL(req.url);
         const category = searchParams.get('category');
