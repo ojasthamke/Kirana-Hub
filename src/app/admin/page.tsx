@@ -27,11 +27,16 @@ const Badge = ({ status }: { status: string }) => {
 };
 
 const Modal = ({ title, onClose, children }: any) => (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
-        <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', animation: 'modalOverlay 0.25s ease-out' }} onClick={onClose}>
+        <style>{`
+            @keyframes modalOverlay { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes modalShow { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            .modal-content { animation: modalShow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        `}</style>
+        <div className="modal-content" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative' }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: '1.5rem 1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>{title}</h2>
-                <button onClick={onClose} style={{ width: 32, height: 32, border: '1.5px solid #e2e8f0', borderRadius: 8, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a' }}>{title}</h2>
+                <button onClick={onClose} style={{ width: 36, height: 36, border: '1.5px solid #e2e8f0', borderRadius: 10, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s' }}><X size={18} /></button>
             </div>
             <div style={{ padding: '0 1.5rem 1.5rem' }}>{children}</div>
         </div>

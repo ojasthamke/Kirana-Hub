@@ -46,13 +46,25 @@ function CardMenu({ product, vendorName }: { product: Product; vendorName: strin
                 <MoreVertical size={16} />
             </button>
             {open && (
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#fff', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', border: '1px solid #f1f5f9', minWidth: 200, zIndex: 100 }}>
-                    <div style={{ padding: '0.75rem' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Product Info</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                            <Store size={14} color="#16a34a" /> <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{vendorName}</span>
+                <div className="menu-pop" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', minWidth: 220, zIndex: 100, overflow: 'hidden' }}>
+                    <style>{`
+                        @keyframes menuPop { from { opacity: 0; transform: scale(0.9) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+                        .menu-pop { animation: menuPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: top right; }
+                    `}</style>
+                    <div style={{ padding: '1rem' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Supplier Information</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Store size={14} color="#16a34a" />
+                            </div>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{vendorName}</span>
                         </div>
-                        {product.offer && <div style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 700 }}>🎁 {product.offer}</div>}
+                        {product.offer && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: '#eff6ff', padding: '0.5rem', borderRadius: 10, marginTop: '0.5rem' }}>
+                                <Tag size={14} color="#2563eb" />
+                                <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 800 }}>{product.offer}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -253,7 +265,11 @@ export default function Home() {
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
                                 {catProducts.map(product => (
-                                    <div key={product._id} style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s ease', position: 'relative', overflow: 'hidden' }}>
+                                    <div key={product._id} className="product-card" style={{ background: '#fff', borderRadius: 24, border: '1px solid #f1f5f9', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative', overflow: 'hidden' }}>
+                                        <style>{`
+                                            .product-card:hover { transform: translateY(-6px) scale(1.01); boxShadow: 0 20px 40px -15px rgba(0,0,0,0.1); }
+                                            .btn-tap:active { transform: scale(0.95); }
+                                        `}</style>
                                         <div style={{ padding: '1.5rem' }}>
                                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem' }}>
                                                 {/* Small Thumbnail */}
