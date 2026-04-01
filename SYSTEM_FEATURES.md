@@ -11,6 +11,8 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **State Management:** `CartContext` (Client) for multi-vendor checkout synchronization.
 - **Authentication:** JWT-based.
   - **Bridge Logic:** Login sets the `token` in `document.cookie` (for server-side pages) and `localStorage` (for client-side/mobile API calls via `Authorization` header).
+- **API Communication:** All requests use `getApiUrl()` to resolve the correct backend. The system detects mobile emulator bridges (10.0.2.2) and allows a `localStorage` override via `API_URL_OVERRIDE` for field debugging without re-building.
+- **Error Resilience:** Clients are programmed to detect HTML-as-JSON responses (which cause the '200 OK' error). If an API call hits a redirect or a 404 page returning HTML, the app provides a descriptive "Network Misconfiguration" warning instead of crashing.
 - **Mobile Support:** Capacitor handles hardware back-button navigation (`AppListener.tsx`).
 
 ---

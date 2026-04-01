@@ -35,8 +35,13 @@ export default function LoginClient() {
             try {
                 data = JSON.parse(text);
             } catch (jsonErr) {
-                console.error('Invalid JSON:', text);
-                setError(`Server Error: Received ${res.status} response. Please check your server logs.`);
+                console.error('Invalid JSON Response:', text);
+                const isHtml = text.trim().startsWith('<');
+                if (isHtml) {
+                    setError(`Network Misconfiguration: The server at ${url} returned an HTML page instead of API data. This usually means a 404 or a redirect is happening. Check your API_BASE URL.`);
+                } else {
+                    setError(`Server Error: Invalid response format. Received status ${res.status}.`);
+                }
                 return;
             }
             

@@ -2,17 +2,19 @@
 // All fetch calls should use getApiUrl() to get the correct base URL
 
 const getBase = () => {
-    // 1. Explicit environment variable override (Standard Senior Practice)
+    // 1. Explicit environment variable override
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
 
     if (typeof window !== 'undefined') {
+        // 2. LocalStorage override for on-the-fly mobile debugging (Pro Level)
+        const manualOverride = localStorage.getItem('API_URL_OVERRIDE');
+        if (manualOverride) return manualOverride;
+
         const { origin, protocol, host } = window.location;
-        // If we are in a web browser and its a regular URL
-        if (protocol.startsWith('http')) {
-            return origin;
-        }
-        // If we are in a mobile/capacitor with a custom scheme, check if we're debugging
-        if (host === 'localhost') return 'http://localhost:3000';
+        if (protocol.startsWith('http')) return origin;
+        
+        // 3. Smart Android/iOS Emulator Fallback
+        if (host === 'localhost') return 'http://10.0.2.2:3000'; // Common Android host bridge
     }
     // Fallback for production (Vercel)
     return 'https://kiranahub.vercel.app';
