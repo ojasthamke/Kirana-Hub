@@ -11,6 +11,7 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **State Management:** `CartContext` (Client) for multi-vendor checkout synchronization.
 - **Authentication:** JWT-based.
   - **Bridge Logic:** Login sets the `token` in `document.cookie` (for server-side pages) and `localStorage` (for client-side/mobile API calls via `Authorization` header).
+- **Mobile Architecture (Auto-Updating):** The Capacitor `capacitor.config.ts` is configured as a **Live Webview Container** pointing to the Vercel production URL (`server.url`). This means the Native Android APK never has to be rebuilt; all UI updates, animations, and bug fixes pushed to GitHub/Vercel are instantly reflected in the mobile app without local rebuilds.
 - **API Communication (Strict Mobile Routing):** All requests use `getApiUrl()` to resolve the correct backend. The system enforces **Strict Capacitor App Detection** (`window.Capacitor`) to instantly force the app to hit the Vercel Production Server. This permanently prevents the "Android localhost loop" (where the phone tries to query its own local storage for a database instead of the live server).
 - **Pro-Level Debugging:** A `localStorage` override via `API_URL_OVERRIDE` is available for field debugging (e.g., pointing a real phone to a PC's local IP like `192.168.1.15:3000` via the "CHANGE SERVER IP" button on the error screen).
 - **Error Resilience:** Clients proactively catch HTML-as-JSON responses (which cause the 'Server Error 200'). If an API call hits a redirect or a 404 block, the app extracts the `<title>` tag of the HTML page and provides a highly descriptive "Network Misconfiguration" warning instead of an arbitrary crash.
@@ -161,7 +162,17 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 
 ---
 
-## 📡 7. API Route Mapping
+## 🎨 7. UI/UX Animation & Interaction Standards
+- **Page Transitions:** Navigating between Next.js pages triggers a native-feeling full-screen slide from the right side (`translateX(100vw)` to `0`) using `template.tsx`.
+- **Loading Overlays:** The global loader (`loading.tsx`) utilizes minimal, clean pulse-dots centered on the screen without massive distracting branding elements.
+- **Click-Outside to Close (Bulletproof UX):** All sliding drawers, navigation option menus, and product card menus are backed by a fixed `inset: 0` invisible interaction layer to guarantee that tapping *anywhere* outside the menu aggressively closes it.
+- **Hardware Back Navigation:** Floating menus and sidebars intercept the Native Android hardware back-button (`popstate` listener) to close gracefully rather than accidentally navigating the user away.
+- **Premium Element Animations:** Modals utilize a slick zoom-in `modalShow` pop, and Product Cards feature a smooth `hover` scale-and-lift elevation effect.
+
+
+---
+
+## 📡 8. API Route Mapping
 
 | Endpoint | Method | Result |
 | :--- | :--- | :--- |

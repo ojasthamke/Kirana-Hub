@@ -32,6 +32,19 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
         }
     }, []);
 
+    // Intercept Android hardware back button to close floating menus
+    useEffect(() => {
+        if (menuOpen || drawerOpen) {
+            const handleBack = () => {
+                setMenuOpen(false);
+                setDrawerOpen(false);
+            };
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', handleBack);
+            return () => window.removeEventListener('popstate', handleBack);
+        }
+    }, [menuOpen, drawerOpen]);
+
 
     useEffect(() => {
         if (session && session.role === 'user') {
@@ -108,9 +121,11 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                     </div>
                 </div>
 
-                {/* Dropdown Menu */}
+                {/* Dropdown Menu Overlay & Container */}
                 {menuOpen && (
-                    <div style={{
+                    <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 250 }} onClick={() => setMenuOpen(false)} onTouchStart={() => setMenuOpen(false)} />
+                        <div style={{
                         position: 'absolute', top: '70px', right: '1rem', width: '220px',
                         background: '#fff', borderRadius: 16, boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
                         border: '1px solid var(--gray-100)', zIndex: 300, padding: '0.5rem',
@@ -162,6 +177,7 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                             )}
                         </div>
                     </div>
+                    </>
                 )}
             </nav>
 

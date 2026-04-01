@@ -6,15 +6,16 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <div className="page-transition-wrapper">
       <style>{`
+        body { overflow-x: hidden; }
         .page-transition-wrapper {
-          animation: slideEnters 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          animation: slideEnters 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           will-change: transform, opacity;
         }
 
         @keyframes slideEnters {
           0% {
-            opacity: 0;
-            transform: translateX(18px);
+            opacity: 0.2;
+            transform: translateX(100vw);
           }
           100% {
             opacity: 1;

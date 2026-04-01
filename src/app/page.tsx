@@ -46,6 +46,8 @@ function CardMenu({ product, vendorName }: { product: Product; vendorName: strin
                 <MoreVertical size={16} />
             </button>
             {open && (
+                <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }} />
                 <div className="menu-pop" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', minWidth: 220, zIndex: 100, overflow: 'hidden' }}>
                     <style>{`
                         @keyframes menuPop { from { opacity: 0; transform: scale(0.9) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
@@ -67,6 +69,7 @@ function CardMenu({ product, vendorName }: { product: Product; vendorName: strin
                         )}
                     </div>
                 </div>
+                </>
             )}
         </div>
     );
