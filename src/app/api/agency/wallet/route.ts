@@ -16,11 +16,11 @@ export async function GET(req: Request) {
         const orders = await Order.find({ vendor_id: session.id });
 
         const totalRevenue = orders
-            .filter(o => o.status === 'Delivered')
+            .filter(o => o.payment_status === 'Paid' && o.status !== 'Cancelled')
             .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
         const pendingAmount = orders
-            .filter(o => !['Delivered', 'Cancelled'].includes(o.status))
+            .filter(o => o.payment_status !== 'Paid' && o.status !== 'Cancelled')
             .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
         return NextResponse.json({
