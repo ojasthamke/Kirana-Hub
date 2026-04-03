@@ -8,18 +8,17 @@ export default function Template({ children }: { children: React.ReactNode }) {
       <style>{`
         body { overflow-x: hidden; }
         .page-transition-wrapper {
-          animation: slideEnters 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          will-change: transform, opacity;
+          animation: slideEnters 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         @keyframes slideEnters {
           0% {
-            opacity: 0.2;
-            transform: translateX(100vw);
+            opacity: 0;
+            transform: translateX(30px);
           }
           100% {
             opacity: 1;
-            transform: translateX(0);
+            transform: none; /* 🔴 CRITICAL: Setting to none frees position: fixed / sticky children from the stacking context */
           }
         }
       `}</style>

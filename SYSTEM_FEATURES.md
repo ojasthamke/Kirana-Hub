@@ -179,6 +179,7 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **Click-Outside to Close (Bulletproof UX):** All sliding drawers, navigation option menus, and product card menus are backed by a fixed `inset: 0` invisible interaction layer to guarantee that tapping *anywhere* outside the menu aggressively closes it.
 - **Hardware Back Navigation:** Floating menus and sidebars intercept the Native Android hardware back-button (`popstate` listener) to close gracefully rather than accidentally navigating the user away.
 - **Premium Element Animations:** Modals utilize a slick zoom-in `modalShow` pop, and Product Cards feature a smooth `hover` scale-and-lift elevation effect.
+- **Viewport Stacking Context Fix (The 'Eye Button' Glitch):** Resolved a critical layout bug where page transitions (transforms) were creating new stacking contexts, trapping "fixed" modals inside the scrollable container. Refactored the global `template.tsx` to clear transforms after animation (`transform: none`). This allows all Eye, Edit, and View buttons to open popups perfectly centered on the browser viewport, regardless of how far the user has scrolled.
 - **Pro-Wholesale Typing UX (Hard-Coded Professionalism):** 
   - **Auto-Select:** Quantitiy inputs automatically select all text on focus, allowing users to instantly overwrite values without backspacing ('Soft' to 'Hard' transition).
   - **Backspace Integrity:** If a user deletes all contents of an input, it defaults to `0` instead of a blank string, preventing mobile keyboards from closing or flickering.
