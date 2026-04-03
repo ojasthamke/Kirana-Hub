@@ -388,10 +388,18 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
                 </button>
             ) : (
                 <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: 12, border: '1.5px solid #16a34a', overflow: 'hidden' }}>
-                    <button onClick={() => onUpdate(qty - 1)} style={{ width: 40, height: 40, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>−</button>
-                    <input type="number" readOnly value={qty} 
-                        style={{ flex: 1, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '1rem' }} />
-                    <button onClick={() => onUpdate(qty + 1)} style={{ width: 40, height: 40, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.125rem', fontWeight: 700, color: '#16a34a' }}>+</button>
+                    <button onClick={() => onUpdate(qty - 1)} style={{ width: 44, height: 44, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>−</button>
+                    <input 
+                        type="number" 
+                        value={qty} 
+                        onChange={(e) => onUpdate(parseInt(e.target.value) || 0)}
+                        onBlur={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            if (val > 0 && val < minQty) onUpdate(minQty);
+                        }}
+                        style={{ flex: 1, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '1.1rem', color: '#0f172a', width: '100%', minWidth: 50 }} 
+                    />
+                    <button onClick={() => onUpdate(qty + 1)} style={{ width: 44, height: 44, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.125rem', fontWeight: 700, color: '#16a34a' }}>+</button>
                 </div>
             )}
         </div>

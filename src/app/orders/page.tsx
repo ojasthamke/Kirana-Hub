@@ -248,9 +248,14 @@ export default function UserOrders() {
                                                         <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Qty</div>
                                                         {editId === o._id ? (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '0.2rem' }}>
-                                                                <button onClick={() => updateQty(i, p.quantity - 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b' }}>-</button>
-                                                                <span style={{ fontSize: '0.875rem', fontWeight: 900, minWidth: 20 }}>{p.quantity}</span>
-                                                                <button onClick={() => updateQty(i, p.quantity + 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b' }}>+</button>
+                                                                <button onClick={() => updateQty(i, p.quantity - 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b', width: 24 }}>-</button>
+                                                                <input 
+                                                                    type="number"
+                                                                    value={p.quantity}
+                                                                    onChange={(e) => updateQty(i, parseInt(e.target.value) || 0)}
+                                                                    style={{ width: 40, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '0.875rem' }} 
+                                                                />
+                                                                <button onClick={() => updateQty(i, p.quantity + 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b', width: 24 }}>+</button>
                                                             </div>
                                                         ) : (
                                                             <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#475569' }}>{p.quantity}</div>

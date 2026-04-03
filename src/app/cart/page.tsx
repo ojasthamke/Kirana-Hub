@@ -169,7 +169,17 @@ export default function CartPage() {
                                     </div>
                                     <div className="qty-stepper">
                                         <button className="qty-btn" onClick={() => updateQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 0}>−</button>
-                                        <span className="qty-input" style={{ minWidth: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' }}>{item.quantity}</span>
+                                        <input 
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 0, item.variantName)}
+                                            onBlur={(e) => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                if (val > 0 && item.minQty && val < item.minQty) updateQuantity(item.productId, item.minQty, item.variantName);
+                                            }}
+                                            className="qty-input" 
+                                            style={{ width: 50, border: 'none', textAlign: 'center', fontWeight: 800, background: 'transparent', outline: 'none', color: '#0f172a' }} 
+                                        />
                                         <button className="qty-btn" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
                                     </div>
                                     <div style={{ textAlign: 'right', minWidth: 80 }}>
