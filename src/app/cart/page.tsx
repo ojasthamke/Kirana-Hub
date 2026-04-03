@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingBag, Trash2, ChevronRight, CheckCircle, Package, ShoppingCart, CreditCard, Banknote, X } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '../../context/CartContext';
@@ -8,8 +8,15 @@ import { apiFetch } from '@/lib/api';
 
 function PaymentModal({ total, onConfirm, onClose }: { total: number; onConfirm: (method: 'Cash' | 'Online') => void; onClose: () => void }) {
     const [method, setMethod] = useState<'Cash' | 'Online'>('Cash');
+    
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'auto'; };
+    }, []);
+
     return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={onClose}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', animation: 'modalFadeIn 0.2s ease-out' }} onClick={onClose}>
+            <style>{`@keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
             <div style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, padding: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>Choose Payment Method</h2>

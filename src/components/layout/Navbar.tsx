@@ -131,7 +131,7 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
 
                                 {statsOpen && session.role === 'user' && (
                                     <>
-                                    <div style={{ position: 'fixed', inset: 0, zIndex: 900 }} onClick={() => setStatsOpen(false)} />
+                                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 900 }} onClick={() => setStatsOpen(false)} />
                                     <div style={{
                                         position: 'absolute', top: '120%', right: 0, width: '220px', background: '#fff', borderRadius: 20, 
                                         boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', zIndex: 910, padding: '1.25rem',
@@ -186,7 +186,7 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                 {/* Dropdown Menu Overlay & Container */}
                 {menuOpen && (
                     <>
-                        <div style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'rgba(0,0,0,0.05)' }} onClick={() => setMenuOpen(false)} onTouchStart={() => setMenuOpen(false)} />
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 250, background: 'rgba(0,0,0,0.05)' }} onClick={() => setMenuOpen(false)} onTouchStart={() => setMenuOpen(false)} />
                         <div style={{
                         position: 'absolute', top: '70px', right: '1rem', width: '220px',
                         background: '#fff', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
@@ -260,7 +260,7 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
 
             {/* Business Vertical Drawer */}
             {drawerOpen && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'flex-end' }} onClick={() => setDrawerOpen(false)}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'flex-end' }} onClick={() => setDrawerOpen(false)}>
                     <div style={{ 
                         width: '320px', height: '100%', background: '#fff', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', 
                         padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)' 

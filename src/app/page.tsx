@@ -51,7 +51,7 @@ function CardMenu({ product, vendorName }: { product: Product; vendorName: strin
             </button>
             {open && (
                 <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 140, background: 'rgba(0,0,0,0.02)' }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }} />
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 140, background: 'rgba(0,0,0,0.02)' }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }} />
                 <div className="menu-pop" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', minWidth: 220, zIndex: 150, overflow: 'hidden' }}>
                     <style>{`
                         @keyframes menuPop { from { opacity: 0; transform: scale(0.9) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }

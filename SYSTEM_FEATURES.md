@@ -9,6 +9,9 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **Styling:** Vanilla CSS-in-JS and custom modules for a professional, mobile-first design.
 - **Database:** MongoDB Atlas with Mongoose.
 - **State Management:** `CartContext` (Client) for multi-vendor checkout synchronization.
+- **Optimistic UI (Zero-Latency):** All Shopper actions (Add to Cart, Update Quantity) update the interface **instantly**. The system performs its inventory checks and database syncs in the background, ensuring the app feels as fast as a native social media feed.
+- **Inventory Reservation (10-Minute Lock):** When an item is added to a cart, it is automatically 'Reserved' for 10 minutes in the database. Other users will see these items as "Locked" or "In Carts", preventing double-selling of low-stock wholesale items.
+- **Persistent Sessions:** Cart items are mirrored in `localStorage`. If a user closes the app or refreshes, their chosen items and quantities remain exactly as they left them.
 - **Authentication:** JWT-based.
   - **Bridge Logic:** Login sets the `token` in `document.cookie` (for server-side pages) and `localStorage` (for client-side/mobile API calls via `Authorization` header).
 - **Mobile Architecture (Auto-Updating):** The Capacitor `capacitor.config.ts` is configured as a **Live Webview Container** pointing to the Vercel production URL (`server.url`). This means the Native Android APK never has to be rebuilt; all UI updates, animations, and bug fixes pushed to GitHub/Vercel are instantly reflected in the mobile app without local rebuilds.
@@ -176,6 +179,7 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **Click-Outside to Close (Bulletproof UX):** All sliding drawers, navigation option menus, and product card menus are backed by a fixed `inset: 0` invisible interaction layer to guarantee that tapping *anywhere* outside the menu aggressively closes it.
 - **Hardware Back Navigation:** Floating menus and sidebars intercept the Native Android hardware back-button (`popstate` listener) to close gracefully rather than accidentally navigating the user away.
 - **Premium Element Animations:** Modals utilize a slick zoom-in `modalShow` pop, and Product Cards feature a smooth `hover` scale-and-lift elevation effect.
+- **Viewport-Centered Modals:** Fixed a critical alignment issue where modals would open at the bottom of long pages. All popups (Edit, View, Payment) are now strictly pinned to the center of the current viewport and lock the background scroll for maximum focus.
 
 
 ---
@@ -192,3 +196,5 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 | `/api/admin/users/clear-dues` | POST | Mass-updates payment status for an entire shop owner. |
 | `/api/agency/wallet` | GET | Calculates vendor revenue and pending balance. |
 | `/api/locations` | GET | Fetches active states and cities. |
+| `/api/cart/reserve` | POST | Locks/Unlocks stock for 10 minutes. |
+| `/api/orders/unpaid-total` | GET | Real-time balance for Navbar stats. |
