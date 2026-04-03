@@ -343,13 +343,22 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
     const price = variant ? variant.price : product.price;
     const unit = variant ? variant.unit : product.unit;
     const minQty = variant ? variant.min_qty : product.min_qty;
-    const inStock = (variant?.status || product.status) === 'In Stock';
+    
+    // Use the stock and reserved counts from the modified API response
+    const stock = variant ? (variant as any).stock : product.stock;
+    const totalReserved = variant ? (variant as any).totalReserved : (product as any).totalReserved;
+    const inStock = stock > 0;
 
     return (
         <div style={{ background: qty > 0 ? '#f0fdf4' : '#f8fafc', padding: '1rem', borderRadius: 16, border: '1.5px solid', borderColor: qty > 0 ? '#16a34a' : '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.75rem', transition: 'all 0.2s' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                   <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.04em' }}>Variation</div>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.04em' }}>Variation</span>
+                        {totalReserved > 0 && stock > 0 && (
+                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#ea580c', background: '#fff7ed', padding: '0.1rem 0.4rem', borderRadius: 6, border: '1px solid #ffedd5' }}>🔥 {totalReserved} in carts</span>
+                        )}
+                   </div>
                    <div style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0f172a' }}>{name}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -358,14 +367,21 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
                 </div>
             </div>
 
-            {minQty > 1 && (
-                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', background: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: 6, width: 'fit-content' }}>
-                    Min. {minQty} {unit} Required
-                </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {minQty > 1 && (
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', background: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: 6, width: 'fit-content' }}>
+                        Min. {minQty} {unit} Required
+                    </div>
+                )}
+                {inStock && (
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b' }}>Available: {stock} {unit}</div>
+                )}
+            </div>
 
             {!inStock ? (
-                <div style={{ padding: '0.75rem', background: '#fee2e2', borderRadius: 12, textAlign: 'center', color: '#dc2626', fontSize: '0.8125rem', fontWeight: 700 }}>Out of Stock</div>
+                <div style={{ padding: '0.75rem', background: '#fee2e2', borderRadius: 12, textAlign: 'center', color: '#dc2626', fontSize: '0.8125rem', fontWeight: 700 }}>
+                    {totalReserved > 0 ? 'Locked in other carts' : 'Out of Stock'}
+                </div>
             ) : qty === 0 ? (
                 <button onClick={() => onUpdate(minQty)} style={{ width: '100%', padding: '0.75rem', borderRadius: 12, background: '#0f172a', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                     <Plus size={16} /> Add to Cart
@@ -373,7 +389,7 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
             ) : (
                 <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: 12, border: '1.5px solid #16a34a', overflow: 'hidden' }}>
                     <button onClick={() => onUpdate(qty - 1)} style={{ width: 40, height: 40, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>−</button>
-                    <input type="number" value={qty} onFocus={(e) => e.target.select()} onChange={(e) => onUpdate(parseInt(e.target.value) || 0)} 
+                    <input type="number" readOnly value={qty} 
                         style={{ flex: 1, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '1rem' }} />
                     <button onClick={() => onUpdate(qty + 1)} style={{ width: 40, height: 40, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.125rem', fontWeight: 700, color: '#16a34a' }}>+</button>
                 </div>

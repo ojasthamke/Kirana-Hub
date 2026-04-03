@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
+import Product from '@/models/Product';
 import { getAuthSession } from '@/lib/auth';
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -33,6 +34,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         if (products !== undefined) {
             updateData.products = products;
             updateData.total_amount = products.reduce((acc: number, p: any) => acc + (p.total || 0), 0);
+        }
+
+        // If cancelling, return stock to inventory
+        if (status === 'Cancelled' && order.status !== 'Cancelled') {
+            for (const item of order.products) {
+                if (item.variantName) {
+                    await Product.updateOne(
+                        { _id: item.product_id, "variants.variant_name": item.variantName },
+                        { $inc: { "variants.$.stock": item.quantity } }
+                    );
+                } else {
+                    await Product.findByIdAndUpdate(item.product_id, {
+                        $inc: { stock: item.quantity }
+                    });
+                }
+            }
         }
 
         const updatedOrder = await Order.findByIdAndUpdate(orderId, { $set: updateData }, { new: true });

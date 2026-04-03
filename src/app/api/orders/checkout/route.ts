@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
+import Reservation from '@/models/Reservation';
 import { getAuthSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
@@ -42,8 +43,18 @@ export async function POST(req: Request) {
                 name = `${dbProduct.name_en} (${item.variantName})`;
             }
 
-            if (currentStock < item.quantity) {
-                throw new Error(`Item "${name}" has insufficient stock (Requested: ${item.quantity}, Available: ${currentStock})`);
+            // Calculate available stock (Product Stock - Other Reservations)
+            const otherReservations = await Reservation.find({
+                product_id: dbProduct._id,
+                variant_name: item.variantName || null,
+                user_id: { $ne: session.id },
+                expiresAt: { $gt: new Date() }
+            });
+            const reservedByOthers = otherReservations.reduce((sum, r) => sum + r.quantity, 0);
+            const netAvailable = currentStock - reservedByOthers;
+
+            if (netAvailable < item.quantity) {
+                throw new Error(`Item "${name}" just became unavailable (Reserved by someone else: ${reservedByOthers}, Available: ${netAvailable})`);
             }
 
             const vendorId = dbProduct.vendor_id.toString();
@@ -95,6 +106,9 @@ export async function POST(req: Request) {
                 payment_method: payment_method || 'Cash',
             });
         }
+
+        // 4. Clear user's reservations
+        await Reservation.deleteMany({ user_id: session.id });
 
         return NextResponse.json({ success: true, masterOrderId });
     } catch (error: any) {
