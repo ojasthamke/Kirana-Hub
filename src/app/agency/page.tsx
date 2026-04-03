@@ -132,7 +132,10 @@ export default function AgencyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
-      if (res.ok) await load();
+      if (res.ok) {
+        await load();
+        window.dispatchEvent(new Event('refresh-stats'));
+      }
       else {
         const d = await res.json();
         alert(`Update Failed: ${d.error || 'Check permissions'}`);
@@ -395,7 +398,7 @@ export default function AgencyPage() {
                           <td style={{ padding: '1rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                               <Badge s={o.payment_status} />
-                              {o.payment_status === 'Unpaid' && (
+                              {o.payment_status === 'Unpaid' && o.status !== 'Cancelled' && (
                                 <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })}
                                   style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
                                   {isUpdating ? 'Wait...' : 'Mark Paid'}
@@ -572,8 +575,10 @@ export default function AgencyPage() {
               </table>
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <button onClick={() => updateOrder(selectedOrder._id, { status: 'Delivered' })} disabled={updatingId === selectedOrder._id || selectedOrder.status === 'Delivered'} style={{ flex: 1, padding: '1rem', borderRadius: 12, border: 'none', background: '#16a34a', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Deliver Order</button>
-              <button onClick={() => { if(confirm('Cancel?')) updateOrder(selectedOrder._id, { status: 'Cancelled' }) }} disabled={updatingId === selectedOrder._id} style={{ padding: '1rem', borderRadius: 12, border: 'none', background: '#fee2e2', color: '#dc2626', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={20} /></button>
+              {selectedOrder.status !== 'Cancelled' && (
+                <button onClick={() => updateOrder(selectedOrder._id, { status: 'Delivered' })} disabled={updatingId === selectedOrder._id || selectedOrder.status === 'Delivered'} style={{ flex: 1, padding: '1rem', borderRadius: 12, border: 'none', background: '#16a34a', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Deliver Order</button>
+              )}
+              <button onClick={() => { if(confirm('Cancel?')) updateOrder(selectedOrder._id, { status: 'Cancelled' }) }} disabled={updatingId === selectedOrder._id || selectedOrder.status === 'Cancelled'} style={{ padding: '1rem', borderRadius: 12, border: 'none', background: '#fee2e2', color: '#dc2626', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={20} /></button>
             </div>
           </div>
         </Modal>

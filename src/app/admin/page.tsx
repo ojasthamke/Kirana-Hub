@@ -132,6 +132,7 @@ export default function AdminPage() {
             });
             if (res.ok) {
                 await load();
+                window.dispatchEvent(new Event('refresh-stats'));
             } else {
                 const d = await res.json();
                 alert(`Error: ${d.error || 'Failed to update order'}`);
@@ -452,7 +453,7 @@ export default function AdminPage() {
                                                         <td style={{ padding: '1rem' }}>
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                                 <Badge status={o.payment_status} />
-                                                                {o.payment_status === 'Unpaid' && (
+                                                                {o.payment_status === 'Unpaid' && o.status !== 'Cancelled' && (
                                                                     <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })}
                                                                         style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
                                                                         {isUpdating ? 'Wait...' : 'Mark as Paid'}
@@ -600,7 +601,7 @@ export default function AdminPage() {
                                                     <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.8125rem' }}>{u.address}</td>
                                                     <td style={{ padding: '1rem' }}>
                                                         {(() => {
-                                                            const unpaid = orders.filter(o => o.user_id?._id === u._id && o.payment_status === 'Unpaid');
+                                                            const unpaid = orders.filter(o => o.user_id?._id === u._id && o.payment_status === 'Unpaid' && o.status !== 'Cancelled');
                                                             const total = unpaid.reduce((sum, o) => sum + o.total_amount, 0);
                                                             return (
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

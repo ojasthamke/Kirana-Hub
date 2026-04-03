@@ -13,7 +13,7 @@ export async function GET(req: Request) {
         await dbConnect();
         const orders = await Order.find({
             user_id: session.id,
-            payment_status: 'Unpaid',
+            payment_status: { $ne: 'Paid' },
             status: { $ne: 'Cancelled' }
         }, 'total_amount');
 
