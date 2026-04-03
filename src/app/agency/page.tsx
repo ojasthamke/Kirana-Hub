@@ -147,8 +147,6 @@ export default function AgencyPage() {
     };
     if (!pf.offer) delete (body as any).offer;
 
-    console.log('DEBUG: Saving Product with Variants:', JSON.stringify(body, null, 2));
-
     try {
       const url = '/api/agency/products';
       const method = modal === 'add' ? 'POST' : 'PATCH';
@@ -366,7 +364,6 @@ export default function AgencyPage() {
           )}
 
           {tab === 'orders' && (
-            /* ... previous orders table code ... */
             <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)' }}>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 1000 }}>
@@ -462,75 +459,7 @@ export default function AgencyPage() {
             </div>
           )}
         </div>
-
-        {(modal === 'add' || modal === 'edit') && (
-          <Modal title={modal === 'add' ? 'Add New Product' : 'Edit Product'} onClose={() => setModal(null)} maxWidth={700}>
-            {err && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#dc2626', fontSize: '0.875rem' }}>{err}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
-                  <SI label="NameEn"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
-                  <SI label="NameHi"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
-                </div>
-                <SI label="Product Image URL"><Inp placeholder="https://example.com/photo.jpg" value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))} /></SI>
-                <SI label="Category">
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                      {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <input
-                        placeholder="New category..."
-                        value={customCat}
-                        onChange={e => setCustomCat(e.target.value)}
-                        style={{ width: 120, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.875rem' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomCat}
-                        style={{ padding: '0 0.75rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </SI>
-                <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
-                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Default Configuration</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <SI label="Price (₹)"><Inp type="number" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
-                    <SI label="Unit"><select value={pf.unit} onChange={(e: any) => setPf(p => ({ ...p, unit: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> {UNITS.map(u => <option key={u} value={u}>{u}</option>)} </select></SI>
-                    <SI label="Min Qty"><Inp type="number" value={pf.min_qty} onChange={(e: any) => setPf(p => ({ ...p, min_qty: e.target.value }))} /></SI>
-                    <SI label="Stock"><Inp type="number" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
-                    <SI label="Status"><select value={pf.status} onChange={(e: any) => setPf(p => ({ ...p, status: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> <option value="In Stock">In Stock</option><option value="Out of Stock">Out of Stock</option> </select></SI>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Packaging Variants (Box, Pouch, etc.)</p>
-                  <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}> <Plus size={14} /> Add Variant </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 400, overflow: 'auto' }}>
-                  {pf.variants.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', border: '2px dashed #e2e8f0', borderRadius: 12, color: '#94a3b8', fontSize: '0.85rem' }}>No alternate packaging added.<br />Add variants like "Box" or "Pouch" here.</div>}
-                  {pf.variants.map((v, i) => (
-                    <div key={i} style={{ padding: '1rem', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, position: 'relative' }}>
-                      <button onClick={() => removeVariant(i)} style={{ position: 'absolute', top: 8, right: 8, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                      <SI label="Variant Name (e.g. Box, 5kg Pouch)"><Inp placeholder="Box / Pouch / Case" value={v.variant_name} onChange={(e: any) => updateVariant(i, 'variant_name', e.target.value)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} /></SI>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <SI label="Price (₹)"><Inp type="number" value={v.price} onChange={(e: any) => updateVariant(i, 'price', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                        <SI label="Stock"><Inp type="number" value={v.stock} onChange={(e: any) => updateVariant(i, 'stock', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                        <SI label="Min Qty"><Inp type="number" value={v.min_qty} onChange={(e: any) => updateVariant(i, 'min_qty', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div> {/* End of maxWidth: 1200 container */}
-      </div> {/* End of background div */}
+      </div>
 
       {/* ── MODALS (Liberated at root level) ── */}
       {(modal === 'add' || modal === 'edit') && (
@@ -566,9 +495,10 @@ export default function AgencyPage() {
             <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Packaging Variants</p>
-                <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}> <Plus size={14} /> Add </button>
+                <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}> <Plus size={14} /> Add Variant </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 400, overflow: 'auto' }}>
+                {pf.variants.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', border: '2px dashed #e2e8f0', borderRadius: 12, color: '#94a3b8', fontSize: '0.85rem' }}>No alternate packaging added.<br />Add variants like "Box" or "Pouch" here.</div>}
                 {pf.variants.map((v, i) => (
                   <div key={i} style={{ padding: '1rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, position: 'relative' }}>
                     <button onClick={() => removeVariant(i)} style={{ position: 'absolute', top: 8, right: 8, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={14} /></button>
@@ -587,7 +517,6 @@ export default function AgencyPage() {
 
       {modal === 'details' && selectedOrder && (
         <Modal title="Order Details" onClose={() => setModal(null)}>
-          {/* Previous details modal content remains same */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
               <div>
@@ -616,13 +545,9 @@ export default function AgencyPage() {
                     <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          {p.image_url ? (
-                            <img src={p.image_url} alt={p.name_en || p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
-                          ) : (
-                            <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0' }} />
-                          )}
+                          <img src={p.image_url || '/logo.png'} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
                           <div>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || p.product_id?.name_en || 'Product'}</div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || 'Product'}</div>
                             {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
                           </div>
                         </div>
@@ -640,6 +565,10 @@ export default function AgencyPage() {
                   </tr>
                 </tfoot>
               </table>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => updateOrder(selectedOrder._id, { status: 'Delivered' })} disabled={updatingId === selectedOrder._id || selectedOrder.status === 'Delivered'} style={{ flex: 1, padding: '1rem', borderRadius: 12, border: 'none', background: '#16a34a', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Deliver Order</button>
+              <button onClick={() => { if(confirm('Cancel?')) updateOrder(selectedOrder._id, { status: 'Cancelled' }) }} disabled={updatingId === selectedOrder._id} style={{ padding: '1rem', borderRadius: 12, border: 'none', background: '#fee2e2', color: '#dc2626', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={20} /></button>
             </div>
           </div>
         </Modal>
