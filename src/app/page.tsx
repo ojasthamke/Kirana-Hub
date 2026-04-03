@@ -131,19 +131,29 @@ export default function Home() {
         const vName = variant?.variant_name;
         const price = variant ? variant.price : p.price;
         const minQty = variant ? variant.min_qty : p.min_qty;
-        const unit = variant ? variant.unit : p.unit;
+        const stock = variant ? (variant as any).stock : p.stock;
 
         if (newQty < 0) return;
         if (newQty === 0) { updateQuantity(p._id, 0, vName); return; }
         
-        const finalQty = newQty < minQty ? minQty : newQty;
+        // Block additions if out of stock
+        if (stock <= 0) { alert('Sorry, this item is out of stock!'); return; }
+        
+        // Cap at stock limit
+        let finalQty = newQty > stock ? stock : newQty;
+        if (newQty > stock) alert(`Only ${stock} items available in stock!`);
+        
+        // Ensure Min Qty
+        if (finalQty < minQty) finalQty = minQty;
+
         addToCart({ 
             productId: p._id, variantName: vName, 
             name: vName ? `${p.name_en} (${vName})` : p.name_en, 
             imageUrl: p.image_url,
             price, quantity: finalQty, 
             vendorId: p.vendor_id?._id || '', 
-            minQty: minQty 
+            minQty: minQty,
+            stock: stock
         });
     };
 
@@ -392,11 +402,21 @@ function ProductVariationRow({ product, variant, qty, onUpdate }: { product: Pro
                     <input 
                         type="number" 
                         value={qty} 
-                        onChange={(e) => onUpdate(parseInt(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            if (val > stock) {
+                                alert(`🏷️ Restricted to Max Stock: Only ${stock} units available.`);
+                                onUpdate(stock);
+                            } else {
+                                onUpdate(val);
+                            }
+                        }}
                         onBlur={(e) => {
                             const val = parseInt(e.target.value) || 0;
                             if (val > 0 && val < minQty) onUpdate(minQty);
                         }}
+                        placeholder="0"
                         style={{ flex: 1, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '1.1rem', color: '#0f172a', width: '100%', minWidth: 50 }} 
                     />
                     <button onClick={() => onUpdate(qty + 1)} style={{ width: 44, height: 44, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.125rem', fontWeight: 700, color: '#16a34a' }}>+</button>

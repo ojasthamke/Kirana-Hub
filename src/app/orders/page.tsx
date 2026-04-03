@@ -252,8 +252,19 @@ export default function UserOrders() {
                                                                 <input 
                                                                     type="number"
                                                                     value={p.quantity}
-                                                                    onChange={(e) => updateQty(i, parseInt(e.target.value) || 0)}
-                                                                    style={{ width: 40, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '0.875rem' }} 
+                                                                    onFocus={(e) => e.target.select()}
+                                                                    onChange={(e) => {
+                                                                        const val = parseInt(e.target.value) || 0;
+                                                                        const limit = p.stock || Infinity;
+                                                                        if (val > limit) {
+                                                                            alert(`⚠️ Limit Hit: Only ${limit} units available.`);
+                                                                            updateQty(i, limit);
+                                                                        } else {
+                                                                            updateQty(i, val);
+                                                                        }
+                                                                    }}
+                                                                    placeholder="0"
+                                                                    style={{ width: 45, border: 'none', textAlign: 'center', fontWeight: 900, background: 'transparent', outline: 'none', fontSize: '0.875rem' }} 
                                                                 />
                                                                 <button onClick={() => updateQty(i, p.quantity + 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 900, color: '#64748b', width: 24 }}>+</button>
                                                             </div>

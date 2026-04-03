@@ -12,6 +12,7 @@ interface CartItem {
     quantity: number;
     vendorId: string;
     minQty?: number;
+    stock?: number;
 }
 
 interface CartContextType {
@@ -72,8 +73,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
             if (!res.ok) {
                 const error = await res.json();
-                alert(error.error || 'Inventory Locked: Could not reserve stock.');
-                setCart(prevCart); // Revert
+                const stockLimit = error.stockLimit !== undefined ? error.stockLimit : item.stock;
+                alert(error.error || `Could only reserve ${stockLimit} units.`);
+                
+                // If the error provided a real stock limit, sync the UI to it
+                if (stockLimit !== undefined) {
+                    setCart(prev => prev.map(i => (i.productId === item.productId && i.variantName === item.variantName) 
+                        ? { ...i, quantity: stockLimit, stock: stockLimit } : i));
+                } else {
+                    setCart(prevCart); // Revert
+                }
                 return false;
             }
             return true;

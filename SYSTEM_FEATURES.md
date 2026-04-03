@@ -179,6 +179,11 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **Click-Outside to Close (Bulletproof UX):** All sliding drawers, navigation option menus, and product card menus are backed by a fixed `inset: 0` invisible interaction layer to guarantee that tapping *anywhere* outside the menu aggressively closes it.
 - **Hardware Back Navigation:** Floating menus and sidebars intercept the Native Android hardware back-button (`popstate` listener) to close gracefully rather than accidentally navigating the user away.
 - **Premium Element Animations:** Modals utilize a slick zoom-in `modalShow` pop, and Product Cards feature a smooth `hover` scale-and-lift elevation effect.
+- **Pro-Wholesale Typing UX (Hard-Coded Professionalism):** 
+  - **Auto-Select:** Quantitiy inputs automatically select all text on focus, allowing users to instantly overwrite values without backspacing ('Soft' to 'Hard' transition).
+  - **Backspace Integrity:** If a user deletes all contents of an input, it defaults to `0` instead of a blank string, preventing mobile keyboards from closing or flickering.
+  - **Instant Stock Capping:** Manual typing is validated character-by-character. Typing beyond the agency's stock limit instantly resets the value to the **Maximum Available** and triggers a stylized alert.
+- **Viewport-Centered Modals:** Fixed a critical alignment issue where modals would open at the bottom of long pages. All popups (Edit, View, Payment) are now strictly pinned to the center of the current viewport and lock the background scroll for maximum focus.
 - **Viewport-Centered Modals:** Fixed a critical alignment issue where modals would open at the bottom of long pages. All popups (Edit, View, Payment) are now strictly pinned to the center of the current viewport and lock the background scroll for maximum focus.
 
 

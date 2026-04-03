@@ -168,19 +168,39 @@ export default function CartPage() {
                                         <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>₹{item.price} × {item.quantity} = <strong style={{ color: '#0f172a' }}>₹{item.price * item.quantity}</strong></div>
                                     </div>
                                     <div className="qty-stepper">
-                                        <button className="qty-btn" onClick={() => updateQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 0}>−</button>
+                                        <button className="qty-btn" onClick={() => {
+                                            if (item.quantity > 0) updateQuantity(item.productId, item.quantity - 1, item.variantName);
+                                        }} disabled={item.quantity <= 0}>−</button>
                                         <input 
                                             type="number"
                                             value={item.quantity}
-                                            onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 0, item.variantName)}
+                                            onFocus={(e) => e.target.select()}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value) || 0;
+                                                const limit = item.stock || Infinity;
+                                                if (val > limit) {
+                                                    alert(`📦 Check Stock: Only ${limit} available in agency warehouse.`);
+                                                    updateQuantity(item.productId, limit, item.variantName);
+                                                } else {
+                                                    updateQuantity(item.productId, val, item.variantName);
+                                                }
+                                            }}
                                             onBlur={(e) => {
                                                 const val = parseInt(e.target.value) || 0;
                                                 if (val > 0 && item.minQty && val < item.minQty) updateQuantity(item.productId, item.minQty, item.variantName);
                                             }}
+                                            placeholder="0"
                                             className="qty-input" 
                                             style={{ width: 50, border: 'none', textAlign: 'center', fontWeight: 800, background: 'transparent', outline: 'none', color: '#0f172a' }} 
                                         />
-                                        <button className="qty-btn" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
+                                        <button className="qty-btn" onClick={() => {
+                                            const limit = item.stock || Infinity;
+                                            if (item.quantity >= limit) {
+                                                alert(`Reached maximum stock limit of ${limit}!`);
+                                            } else {
+                                                updateQuantity(item.productId, item.quantity + 1, item.variantName);
+                                            }
+                                        }}>+</button>
                                     </div>
                                     <div style={{ textAlign: 'right', minWidth: 80 }}>
                                         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.125rem', color: 'var(--gray-900)' }}>₹{item.price * item.quantity}</div>
