@@ -33,16 +33,16 @@ const Modal = ({ title, onClose, maxWidth = 520, children }: any) => {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', animation: 'modalFadeIn 0.2s ease-out' }} onClick={onClose}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', animation: 'modalFade 0.2s ease-out' }} onClick={onClose}>
       <style>{`
-        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modalPopUp { from { opacity: 0; transform: scale(0.97) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .m-content { animation: modalPopUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalSlideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-pop { animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}</style>
-      <div className="m-content" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: maxWidth, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-pop" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: maxWidth, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #f1f5f9' }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '1.5rem 1.5rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0f172a' }}>{title}</h2>
-          <button onClick={onClose} style={{ width: 36, height: 36, border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}><X size={18} /></button>
+          <button onClick={onClose} style={{ width: 36, height: 36, border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s' }}><X size={18} /></button>
         </div>
         <div style={{ padding: '0 1.5rem 1.5rem' }}>{children}</div>
       </div>
@@ -68,15 +68,16 @@ export default function AgencyPage() {
   const [modal, setModal] = useState<'add' | 'edit' | 'details' | null>(null);
   const [sel, setSel] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [userHistory, setUserHistory] = useState<Order[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [customCat, setCustomCat] = useState('');
   const [cats, setCats] = useState(DEFAULT_CATS);
 
-  interface ProductForm { name_en: string; name_hi: string; image_url: string; category: string; price: string; stock: string; unit: string; min_qty: string; status: string; offer: string; variants: Variant[]; }
-  const emptyP: ProductForm = { name_en: '', name_hi: '', image_url: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', offer: '', variants: [] };
-  const [pf, setPf] = useState<ProductForm>(emptyP);
+  const emptyP = { name_en: '', name_hi: '', image_url: '', category: 'Pulses', price: '', stock: '', unit: 'kg', min_qty: '1', status: 'In Stock', offer: '', variants: [] as Variant[] };
+  const [pf, setPf] = useState(emptyP);
 
   const load = useCallback(async () => {
     try {
@@ -95,253 +96,479 @@ export default function AgencyPage() {
       if (Array.isArray(pd)) {
         setProducts(pd);
         const prodCats = pd.map((p: Product) => p.category);
-        setCats(Array.from(new Set([...DEFAULT_CATS, ...prodCats])));
+        const allCats = Array.from(new Set([...DEFAULT_CATS, ...prodCats]));
+        setCats(allCats);
       }
-      if (wd && typeof wd === 'object' && !wd.error && 'totalRevenue' in wd) setWallet(wd);
+      if (wd && typeof wd === 'object' && !wd.error && 'totalRevenue' in wd) {
+        setWallet(wd);
+      }
     } catch { }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
-    const t = setInterval(() => load(), 30000);
+    const t = setInterval(() => load(), 30000); // 30s auto-refresh
     return () => clearInterval(t);
   }, [load]);
+
+  useEffect(() => {
+    if (selectedOrder?.user_id?._id) {
+      const history = orders.filter(o => o.user_id?._id === selectedOrder.user_id?._id && o._id !== selectedOrder._id);
+      setUserHistory(history);
+    }
+  }, [selectedOrder, orders]);
 
   const updateOrder = async (id: string, updates: any) => {
     setUpdatingId(id);
     try {
-      const res = await apiFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
-      if (res.ok) await load(); else alert('Error updating');
-    } catch { }
+      const res = await apiFetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) await load();
+      else {
+        const d = await res.json();
+        alert(`Update Failed: ${d.error || 'Check permissions'}`);
+      }
+    } catch { alert('Network Error updating order'); }
     setUpdatingId(null);
   };
 
   const saveProduct = async () => {
     setSaving(true); setErr('');
-    const body: any = { ...pf, price: Number(pf.price), stock: Number(pf.stock), min_qty: Number(pf.min_qty), variants: pf.variants.map(v => ({ ...v, price: Number(v.price), stock: Number(v.stock), min_qty: Number(v.min_qty) })) };
-    if (!pf.offer) delete body.offer;
+    const body = {
+      ...pf,
+      price: Number(pf.price),
+      stock: Number(pf.stock),
+      min_qty: Number(pf.min_qty),
+      variants: pf.variants.map(v => ({ ...v, price: Number(v.price), stock: Number(v.stock), min_qty: Number(v.min_qty) }))
+    };
+    if (!pf.offer) delete (body as any).offer;
+
     try {
+      const url = '/api/agency/products';
       const method = modal === 'add' ? 'POST' : 'PATCH';
       const payload = modal === 'edit' ? { productId: sel!._id, ...body } : body;
-      const r = await apiFetch('/api/agency/products', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (r.ok) { setModal(null); load(); } else setErr('Server Error');
-    } catch { setErr('Network error'); }
+      const r = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!r.ok) { setErr(`Server Error (${r.status}). Please try again later.`); setSaving(false); return; }
+      const d = await r.json();
+      if (!d.success) { setErr(d.error || 'Failed'); setSaving(false); return; }
+      setModal(null); setPf(emptyP); load();
+    } catch { setErr('Something went wrong.'); }
     setSaving(false);
   };
 
-  const deleteProd = async (id: string) => {
-    if (!confirm('Delete?')) return;
-    await apiFetch('/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: id }) });
+  const deleteProd = async (productId: string) => {
+    if (!confirm('Delete this product?')) return;
+    await apiFetch('/api/agency/products', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId }) });
     load();
   };
 
   const openEdit = (p: Product) => {
     setSel(p);
-    setPf({ name_en: p.name_en, name_hi: p.name_hi, category: p.category, price: String(p.price), stock: String(p.stock), unit: p.unit || 'kg', min_qty: String(p.min_qty || 1), status: p.status, offer: p.offer || '', image_url: p.image_url || '', variants: p.variants || [] });
+    setPf({
+      name_en: p.name_en,
+      name_hi: p.name_hi,
+      category: p.category,
+      price: String(p.price),
+      stock: String(p.stock),
+      unit: p.unit || 'kg',
+      min_qty: String(p.min_qty || 1),
+      status: p.status,
+      offer: p.offer || '',
+      image_url: p.image_url || '',
+      variants: p.variants || []
+    });
     setModal('edit');
   };
 
-  const fOrders = orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || (o.user_id?.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
-  const fProducts = products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase()));
+  const addVariant = () => {
+    setPf(p => ({
+      ...p,
+      variants: [...p.variants, { variant_name: '', price: 0, stock: 0, unit: 'pcs', min_qty: 1, status: 'In Stock' }]
+    }));
+  };
 
-  if (loading) return null;
+  const removeVariant = (idx: number) => {
+    setPf(p => ({ ...p, variants: p.variants.filter((_, i) => i !== idx) }));
+  };
+
+  const updateVariant = (idx: number, field: string, val: any) => {
+    setPf(p => ({
+      ...p,
+      variants: p.variants.map((v, i) => i === idx ? { ...v, [field]: val } : v)
+    }));
+  };
+
+  const addCustomCat = () => {
+    const trimmed = customCat.trim();
+    if (trimmed && !cats.includes(trimmed)) {
+      setCats([...cats, trimmed]); setPf(p => ({ ...p, category: trimmed }));
+    } else if (trimmed) { setPf(p => ({ ...p, category: trimmed })); }
+    setCustomCat('');
+  };
+
+  const filteredOrders = orders.filter(o => o.order_id?.toLowerCase().includes(searchQuery.toLowerCase()) || (o.user_id?.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredProducts = products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (loading) return (
+    <div style={{
+      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
+    }}>
+      <div style={{
+        width: 120, height: 120, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite ease-in-out'
+      }}>
+        <img src="/logo.png" alt="KiranaHub" style={{ width: '100%', height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>Agency Dashboard</p>
+        <div style={{ height: 4, width: 140, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
+          <div style={{ height: '100%', width: '40%', background: '#2563eb', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); opacity: 0.8; } }
+        @keyframes bounce { from { transform: translateY(2px); } to { transform: translateY(-4px); } }
+        @keyframes loadProgress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      `}</style>
+    </div>
+  );
 
   return (
     <>
       <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.25rem' }}>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Agency Dashboard • LIVE</div>
-              <h1 style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'Outfit, sans-serif' }}>My Agency Control</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a' }}>Agency Dashboard</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f0fdf4', color: '#16a34a', padding: '0.2rem 0.5rem', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, border: '1px solid #bbf7d0' }}>
+                  <div style={{ width: 5, height: 5, background: '#16a34a', borderRadius: '50%', boxShadow: '0 0 6px #16a34a', animation: 'pulse 1.5s infinite' }} />
+                  LIVE SYNC
+                </div>
+              </div>
+              <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif', fontWeight: 900 }}>My Agency Control</h1>
+              <p style={{ color: '#64748b', fontSize: '0.9375rem', fontWeight: 600 }}>Manage products, fulfil orders, and track your wholesale earnings instantly.</p>
             </div>
-            <button onClick={() => load()} style={{ padding: '0.6rem 1rem', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>
-              <RefreshCw size={16} /> Sync
+            <button onClick={() => load()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: '0.875rem', fontWeight: 700, color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}>
+              <RefreshCw size={15} className={loading && !updatingId ? 'spin' : ''} /> {loading && !updatingId ? 'Syncing...' : 'Refresh Dashboard'}
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {[
-              { l: 'Revenue', v: `₹${wallet.totalRevenue}` },
-              { l: 'Pending', v: `₹${wallet.pendingAmount}` },
-              { l: 'Orders', v: wallet.orderCount },
-              { l: 'Products', v: products.length },
-              { l: 'Cash', v: orders.filter(o => o.payment_method === 'Cash').length },
-              { l: 'Online', v: orders.filter(o => o.payment_method === 'Online').length },
+              { l: 'Revenue', v: `₹${wallet.totalRevenue.toLocaleString()}` },
+              { l: 'Pending', v: `₹${wallet.pendingAmount.toLocaleString()}` },
+              { l: 'Total Orders', v: wallet.orderCount },
+              { l: 'My Products', v: products.length },
+              { l: 'Cash Orders', v: orders.filter(o => o.payment_method === 'Cash').length },
+              { l: 'Online Orders', v: orders.filter(o => o.payment_method === 'Online').length },
             ].map((s, i) => (
-              <div key={i} style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 14, padding: '1rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{s.l}</div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{s.v}</div>
+              <div key={i} style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 14, padding: '1.25rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8', marginBottom: '0.5rem' }}>{s.l}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#0f172a' }}>{s.v}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem' }}>
-              {['overview', 'orders', 'products'].map(t => (
-                <button key={t} onClick={() => setTab(t as any)} style={{ padding: '0.5rem 1rem', borderRadius: 8, background: tab === t ? '#fff' : 'transparent', border: 'none', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', color: tab === t ? '#0f172a' : '#64748b' }}> {t.toUpperCase()} </button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', width: 'fit-content', overflowX: 'auto' }}>
+              {[
+                { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
+                { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
+                { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
+              ].map(t => (
+                <button key={t.id} onClick={() => { setTab(t.id as any); setSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? '#0f172a' : '#64748b', boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>
+                  {t.icon} {t.label}
+                </button>
               ))}
             </div>
-            {tab !== 'overview' && <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}> <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} /> <input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: 12, border: '1.5px solid #e2e8f0', outline: 'none' }} /> </div>}
+
+            {tab !== 'overview' && (
+              <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+                <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input type="text" placeholder={`Search ${tab}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: 12, border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: '#fff' }} />
+              </div>
+            )}
           </div>
 
           {tab === 'products' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Products List</h2>
-                <button onClick={() => { setPf(emptyP); setModal('add'); }} style={{ padding: '0.6rem 1.25rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>+ Add Product</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>My Products</h2>
+                <button onClick={() => { setErr(''); setPf(emptyP); setModal('add'); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.25rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <Plus size={16} /> Add Product
+                </button>
               </div>
-              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ background: '#f8fafc' }}>
-                    <tr>
-                      {['Product', 'Category', 'Price', 'Stock', 'Status', 'Actions'].map(h => <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>{h}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fProducts.map(p => (
-                      <tr key={p._id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <img src={p.image_url || '/logo.png'} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
-                          <div> <div style={{ fontWeight: 800 }}>{p.name_en}</div> <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div> </div>
-                        </td>
-                        <td style={{ padding: '1rem', color: '#64748b' }}>{p.category}</td>
-                        <td style={{ padding: '1rem', fontWeight: 800 }}>₹{p.price}</td>
-                        <td style={{ padding: '1rem' }}>{p.stock}</td>
-                        <td style={{ padding: '1rem' }}><Badge s={p.status} /></td>
-                        <td style={{ padding: '1rem' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => openEdit(p)} style={{ padding: '0.4rem', borderRadius: 8, border: '1px solid #e2e8f0', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                            <button onClick={() => deleteProd(p._id)} style={{ padding: '0.4rem', border: '1px solid #fee2e2', borderRadius: 8, color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                          </div>
-                        </td>
-                      </tr>
+              {filteredProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
+                  <Package size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
+                  <p>{searchQuery ? 'No products match your search.' : 'No products yet. Click "Add Product" to get started.'}</p>
+                </div>
+              ) : (
+                <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
+                      <thead><tr style={{ background: '#f8fafc' }}>
+                        {['Product', 'Category', 'Price/Unit', 'Variants', 'Stock', 'Status', 'Actions'].map(h => (
+                          <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {filteredProducts.map(p => (
+                          <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '1rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                {p.image_url ? (
+                                  <img src={p.image_url} alt={p.name_en} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                ) : (
+                                  <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>No Img</div>
+                                )}
+                                <div>
+                                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '1rem', color: '#475569' }}>{p.category}</td>
+                            <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price}/ {p.unit}</td>
+                            <td style={{ padding: '1rem' }}>
+                              {p.variants && p.variants.length > 0 ? (
+                                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                  {p.variants.map((v, i) => <span key={i} style={{ fontSize: '0.6rem', padding: '2px 6px', background: '#f1f5f9', borderRadius: 4, fontWeight: 700 }}>{v.variant_name}</span>)}
+                                </div>
+                              ) : <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>No variants</span>}
+                            </td>
+                            <td style={{ padding: '1rem' }}>{p.stock}</td>
+                            <td style={{ padding: '1rem' }}><Badge s={p.status} /></td>
+                            <td style={{ padding: '1rem' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => openEdit(p)} style={{ padding: '0.35rem 0.625rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                <button onClick={() => deleteProd(p._id)} style={{ padding: '0.35rem 0.625rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'orders' && (
+            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 1000 }}>
+                  <thead><tr style={{ background: '#f8fafc' }}>
+                    {['Customer', 'Order ID', 'Items', 'Amount', 'Pay Type', 'Pay Status', 'Order Status', 'Date', 'View'].map(h => (
+                      <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
+                  </tr></thead>
+                  <tbody>
+                    {filteredOrders.map(o => {
+                      const isUpdating = updatingId === o._id;
+                      return (
+                        <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{o.user_id?.name || '—'}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>📞 {o.user_id?.phone || '—'}</div>
+                          </td>
+                          <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>#{o.order_id?.slice(-8).toUpperCase() || o._id.slice(-8).toUpperCase()}</td>
+                          <td style={{ padding: '1rem', color: '#64748b', fontWeight: 600 }}>{o.products?.length || 0} ITEMS</td>
+                          <td style={{ padding: '1rem', fontWeight: 900, color: '#0f172a', fontSize: '1rem' }}>₹{o.total_amount}</td>
+                          <td style={{ padding: '1rem' }}>
+                            {o.payment_method === 'Cash' ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#d97706', fontWeight: 800, fontSize: '0.75rem', background: '#fffbeb', padding: '0.25rem 0.6rem', borderRadius: 8 }}>CASH</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#2563eb', fontWeight: 800, fontSize: '0.75rem', background: '#eff6ff', padding: '0.25rem 0.6rem', borderRadius: 8 }}>ONLINE</span>}
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <Badge s={o.payment_status} />
+                              {o.payment_status === 'Unpaid' && (
+                                <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })}
+                                  style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
+                                  {isUpdating ? 'Wait...' : 'Mark Paid'}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <Badge s={o.status} />
+                              {o.status === 'Pending' && (
+                                <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })}
+                                  style={{ padding: '0.4rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}>
+                                  {isUpdating ? 'Wait...' : 'Accept Order'}
+                                </button>
+                              )}
+                              {o.status === 'Accepted' && (
+                                <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })}
+                                  style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+                                  {isUpdating ? 'Wait...' : 'Deliver Order'}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem', fontWeight: 700 }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Eye size={16} color="#64748b" /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {tab === 'orders' && (
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead style={{ background: '#f8fafc' }}>
-                  <tr>
-                    {['Customer', 'Items', 'Total', 'Payment', 'Order Status', 'Date', 'View'].map(h => <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>{h}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {fOrders.map(o => (
-                  <tr key={o._id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '1rem' }}> <div style={{ fontWeight: 800 }}>{o.user_id?.name}</div> <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{o.user_id?.phone}</div> </td>
-                    <td style={{ padding: '1rem' }}>{o.products.length} Items</td>
-                    <td style={{ padding: '1rem', fontWeight: 900 }}>₹{o.total_amount}</td>
-                    <td style={{ padding: '1rem' }}> <Badge s={o.payment_method} /> <div style={{ marginTop: 4 }}> <Badge s={o.payment_status} /> </div> </td>
-                    <td style={{ padding: '1rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <Badge s={o.status} />
-                        {o.status === 'Pending' && <button onClick={() => updateOrder(o._id, { status: 'Accepted' })} style={{ padding: '0.3rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Accept</button>}
-                        {o.status === 'Accepted' && <button onClick={() => updateOrder(o._id, { status: 'Delivered' })} style={{ padding: '0.3rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>Deliver</button>}
-                      </div>
-                    </td>
-                    <td style={{ padding: '1rem', fontSize: '0.8rem', color: '#94a3b8' }}>{new Date(o.createdAt).toLocaleDateString()}</td>
-                    <td style={{ padding: '1rem' }}> <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ padding: '0.5rem', borderRadius: 8, border: '1px solid #e2e8f0', cursor: 'pointer' }}><Eye size={16} /></button> </td>
-                  </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           {tab === 'overview' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.5rem' }}>
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1rem' }}>Recent Activity</h3>
-                {orders.slice(0, 5).map(o => <div key={o._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px dotted #f1f5f9' }}> <div> <div style={{ fontWeight: 700 }}>#{o.order_id?.slice(-6)}</div> <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{o.user_id?.name} · ₹{o.total_amount}</div> </div> <Badge s={o.status} /> </div>)}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Orders</h3>
+                </div>
+                {orders.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>No orders yet.</p> : orders.slice(0, 5).map(o => (
+                  <div key={o._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>#{o.order_id?.slice(-6)}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>₹{o.total_amount} · {o.payment_method}</div>
+                    </div>
+                    <Badge s={o.status} />
+                  </div>
+                ))}
               </div>
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1rem' }}>Inventory Watch</h3>
-                {products.filter(p => Number(p.stock) < 10).map(p => <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0' }}> <div style={{ fontWeight: 700 }}>{p.name_en}</div> <div style={{ color: '#dc2626', fontWeight: 800 }}>Low Stock: {p.stock}</div> </div>)}
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Top Products</h3>
+                {products.slice(0, 5).map(p => (
+                  <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name_en}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>₹{p.price}/{p.unit}</div>
+                    </div>
+                    <Badge s={p.status} />
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── MODALS ── */}
-      {modal === 'details' && selectedOrder && (
-        <Modal title="Detailed Order View" onClose={() => setModal(null)} maxWidth={600}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-              <div> <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>PLACED AT</div> <div style={{ fontWeight: 800 }}>{new Date(selectedOrder.createdAt).toLocaleString()}</div> </div>
-              <div style={{ textAlign: 'right' }}> <Badge s={selectedOrder.status} /> </div>
+      {/* ── MODALS (Liberated at root level) ── */}
+      {(modal === 'add' || modal === 'edit') && (
+        <Modal title="Inventory Detail" onClose={() => setModal(null)} maxWidth={800}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+            <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <SI label="Product Name (English)"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
+                  <SI label="Product Name (Hindi)"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <SI label="Category">
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> {cats.map(c => <option key={c} value={c}>{c}</option>)} </select>
+                      <button onClick={() => { const n = prompt('Enter new category:'); if (n) setCats([...cats, n]); }} style={{ padding: '0.65rem', background: '#f1f5f9', border: 'none', borderRadius: 8 }}>+</button>
+                    </div>
+                  </SI>
+                  <SI label="Product Image URL"><Inp placeholder="https://..." value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))} /></SI>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <SI label="Price (₹)"><Inp type="number" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
+                  <SI label="Unit"><select value={pf.unit} onChange={(e: any) => setPf(p => ({ ...p, unit: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> {UNITS.map(u => <option key={u} value={u}>{u}</option>)} </select></SI>
+                  <SI label="Min Qty"><Inp type="number" value={pf.min_qty} onChange={(e: any) => setPf(p => ({ ...p, min_qty: e.target.value }))} /></SI>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <SI label="Stock"><Inp type="number" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
+                  <SI label="Status"><select value={pf.status} onChange={(e: any) => setPf(p => ({ ...p, status: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> <option value="In Stock">In Stock</option><option value="Out of Stock">Out of Stock</option> </select></SI>
+                </div>
+                <button onClick={saveProduct} disabled={saving} style={{ width: '100%', marginTop: 'auto', padding: '1rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontSize: '1rem', fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}> {saving ? 'Saving...' : 'Save Product & Variants'} </button>
+              </div>
             </div>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 14 }}>
-              <div style={{ fontWeight: 900, color: '#0f172a' }}>{selectedOrder.user_id?.name}</div>
-              <div style={{ fontSize: '0.875rem', color: '#64748b' }}>📞 {selectedOrder.user_id?.phone}</div>
-              <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 8 }}>📍 {selectedOrder.user_id?.address}</div>
-            </div>
-            <div style={{ border: '1px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead style={{ background: '#f8fafc' }}>
-                  <tr> <th style={{ padding: '0.75rem', textAlign: 'left' }}>Item</th> <th style={{ textAlign: 'center' }}>Price</th> <th style={{ textAlign: 'center' }}>Qty</th> <th style={{ textAlign: 'right', padding: '0.75rem' }}>Total</th> </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.products.map((p, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.75rem' }}> <div style={{ fontWeight: 700 }}>{p.name_en || p.name}</div> {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb' }}>{p.variant_name}</div>} </td>
-                      <td style={{ textAlign: 'center' }}>₹{p.price}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 800 }}>{p.quantity}</td>
-                      <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 900 }}>₹{p.total}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', padding: '1rem', borderRadius: 16, color: '#fff' }}>
-              <div style={{ fontWeight: 700 }}>Total Payable</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 900 }}>₹{selectedOrder.total_amount}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button onClick={() => { updateOrder(selectedOrder._id, { status: 'Delivered' }); setModal(null); }} style={{ flex: 1, padding: '1rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: 'pointer' }}>MARK DELIVERED</button>
-              <button onClick={() => setModal(null)} style={{ padding: '1rem', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>CLOSE</button>
+            <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Packaging Variants</p>
+                <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}> <Plus size={14} /> Add Variant </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 400, overflow: 'auto' }}>
+                {pf.variants.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', border: '2px dashed #e2e8f0', borderRadius: 12, color: '#94a3b8', fontSize: '0.85rem' }}>No alternate packaging added.<br />Add variants like "Box" or "Pouch" here.</div>}
+                {pf.variants.map((v, i) => (
+                  <div key={i} style={{ padding: '1rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, position: 'relative' }}>
+                    <button onClick={() => removeVariant(i)} style={{ position: 'absolute', top: 8, right: 8, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                    <SI label="Variant Name"><Inp placeholder="Box / Pouch" value={v.variant_name} onChange={(e: any) => updateVariant(i, 'variant_name', e.target.value)} /></SI>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <SI label="Price"><Inp type="number" value={v.price} onChange={(e: any) => updateVariant(i, 'price', e.target.value)} /></SI>
+                      <SI label="Stock"><Inp type="number" value={v.stock} onChange={(e: any) => updateVariant(i, 'stock', e.target.value)} /></SI>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </Modal>
       )}
 
-      {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Add Product' : 'Edit Product'} onClose={() => setModal(null)} maxWidth={800}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <SI label="English Name"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
-                <SI label="Hindi Name"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
+      {modal === 'details' && selectedOrder && (
+        <Modal title="Order Details" onClose={() => setModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8' }}>Placed On</div>
+                <div style={{ fontWeight: 700 }}>{new Date(selectedOrder.createdAt).toLocaleString()}</div>
               </div>
-              <SI label="Image URL"><Inp value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))} /></SI>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <SI label="Price"><Inp type="number" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
-                <SI label="Stock"><Inp type="number" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
-              </div>
-              <button onClick={saveProduct} disabled={saving} style={{ padding: '1rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: 'pointer', marginTop: 'auto' }}> {saving ? 'Saving...' : 'SAVE PRODUCT'} </button>
+              <Badge s={selectedOrder.status} />
             </div>
-            <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}> <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8' }}>VARIANTS</p> <button onClick={() => setPf(p => ({ ...p, variants: [...p.variants, { variant_name: '', price: 0, stock: 0, unit: 'pcs', min_qty: 1, status: 'In Stock' }] }))} style={{ padding: '0.4rem', background: '#f1f5f9', border: 'none', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>+ ADD</button> </div>
-              <div style={{ maxHeight: 350, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {pf.variants.map((v, i) => (
-                  <div key={i} style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: 10, position: 'relative', border: '1px solid #e2e8f0' }}>
-                    <button onClick={() => setPf(p => ({ ...p, variants: p.variants.filter((_, idx) => idx !== i) }))} style={{ position: 'absolute', top: 5, right: 5, border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer' }}><X size={14} /></button>
-                    <Inp placeholder="Name" value={v.variant_name} onChange={(e: any) => { const vs = [...pf.variants]; vs[i].variant_name = e.target.value; setPf({ ...pf, variants: vs }); }} style={{ padding: '0.4rem', fontSize: '0.8rem', marginBottom: 4 }} />
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                      <Inp type="number" placeholder="Price" value={v.price} onChange={(e: any) => { const vs = [...pf.variants]; vs[i].price = e.target.value; setPf({ ...pf, variants: vs }); }} style={{ padding: '0.4rem', fontSize: '0.8rem' }} />
-                      <Inp type="number" placeholder="Stock" value={v.stock} onChange={(e: any) => { const vs = [...pf.variants]; vs[i].stock = e.target.value; setPf({ ...pf, variants: vs }); }} style={{ padding: '0.4rem', fontSize: '0.8rem' }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 14 }}>
+              <div style={{ fontWeight: 800 }}>{selectedOrder.user_id?.name}</div>
+              <div style={{ fontSize: '0.9rem', color: '#475569' }}>📞 {selectedOrder.user_id?.phone}</div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 8 }}>📍 {selectedOrder.user_id?.address}</div>
+            </div>
+            <div style={{ border: '1.5px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ background: '#f8fafc' }}>
+                  <tr style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Item Details</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Price</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Qty</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrder.products.map((p: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <img src={p.image_url || '/logo.png'} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
+                          <div>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || 'Product'}</div>
+                            {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>₹{p.price}</td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.quantity}</td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '0.9rem', color: '#0f172a' }}>₹{p.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot style={{ background: '#0f172a', color: '#fff' }}>
+                  <tr>
+                    <td colSpan={3} style={{ padding: '0.875rem 1rem', fontWeight: 700 }}>Grand Total</td>
+                    <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '1.25rem' }}>₹{selectedOrder.total_amount}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => updateOrder(selectedOrder._id, { status: 'Delivered' })} disabled={updatingId === selectedOrder._id || selectedOrder.status === 'Delivered'} style={{ flex: 1, padding: '1rem', borderRadius: 12, border: 'none', background: '#16a34a', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Deliver Order</button>
+              <button onClick={() => { if(confirm('Cancel?')) updateOrder(selectedOrder._id, { status: 'Cancelled' }) }} disabled={updatingId === selectedOrder._id} style={{ padding: '1rem', borderRadius: 12, border: 'none', background: '#fee2e2', color: '#dc2626', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={20} /></button>
             </div>
           </div>
         </Modal>
