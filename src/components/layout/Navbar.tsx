@@ -108,11 +108,12 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                         )}
 
                         <button
-                            onClick={() => setMenuOpen(!menuOpen)}
+                            onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem',
                                 borderRadius: 10, border: '1.5px solid var(--gray-200)', background: menuOpen ? 'var(--gray-100)' : 'var(--white)',
-                                fontSize: '0.8rem', fontWeight: 700, color: 'var(--gray-700)', cursor: 'pointer'
+                                fontSize: '0.8rem', fontWeight: 700, color: 'var(--gray-700)', cursor: 'pointer',
+                                position: 'relative', zIndex: (menuOpen ? 310 : 1) // Ensure it's above overlay when open
                             }}
                         >
                             {menuOpen ? <X size={16} /> : <Menu size={16} />}
@@ -124,12 +125,12 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                 {/* Dropdown Menu Overlay & Container */}
                 {menuOpen && (
                     <>
-                        <div style={{ position: 'fixed', inset: 0, zIndex: 250 }} onClick={() => setMenuOpen(false)} onTouchStart={() => setMenuOpen(false)} />
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'rgba(0,0,0,0.05)' }} onClick={() => setMenuOpen(false)} onTouchStart={() => setMenuOpen(false)} />
                         <div style={{
                         position: 'absolute', top: '70px', right: '1rem', width: '220px',
-                        background: '#fff', borderRadius: 16, boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        background: '#fff', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
                         border: '1px solid var(--gray-100)', zIndex: 300, padding: '0.5rem',
-                        animation: 'fadeUp 0.2s ease-out'
+                        animation: 'fadeUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards'
                     }}>
                         {/* Session Role Info */}
                         {session && (

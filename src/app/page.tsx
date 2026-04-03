@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight, Plus, Briefcase, Filter } from 'lucide-react';
+import { ShoppingCart, Package, Search, Leaf, Sparkles, MoreVertical, Info, Tag, Store, ChevronDown, ListFilter, ArrowRight, Plus, Briefcase, Filter, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { apiFetch, getApiUrl } from '@/lib/api';
 
@@ -41,14 +41,18 @@ function CardMenu({ product, vendorName }: { product: Product; vendorName: strin
     }, []);
 
     return (
-        <div ref={ref} style={{ position: 'relative' }}>
-            <button onClick={() => setOpen(!open)} style={{ width: 32, height: 32, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                <MoreVertical size={16} />
+        <div ref={ref} style={{ position: 'relative', zIndex: open ? 150 : 1 }}>
+            <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} style={{ 
+                width: 32, height: 32, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b',
+                position: 'relative', zIndex: open ? 160 : 1
+            }}>
+                {open ? <X size={16} /> : <MoreVertical size={16} />}
             </button>
             {open && (
                 <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }} />
-                <div className="menu-pop" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', minWidth: 220, zIndex: 100, overflow: 'hidden' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 140, background: 'rgba(0,0,0,0.02)' }} onClick={(e) => { e.stopPropagation(); setOpen(false); }} onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }} />
+                <div className="menu-pop" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: '#fff', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', minWidth: 220, zIndex: 150, overflow: 'hidden' }}>
                     <style>{`
                         @keyframes menuPop { from { opacity: 0; transform: scale(0.9) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
                         .menu-pop { animation: menuPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: top right; }
