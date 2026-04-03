@@ -68,7 +68,6 @@ export default function AgencyPage() {
   const [modal, setModal] = useState<'add' | 'edit' | 'details' | null>(null);
   const [sel, setSel] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [userHistory, setUserHistory] = useState<Order[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -93,31 +92,13 @@ export default function AgencyPage() {
         wr?.json().catch(() => null),
       ]);
       if (Array.isArray(od)) setOrders(od);
-      if (Array.isArray(pd)) {
-        setProducts(pd);
-        const prodCats = pd.map((p: Product) => p.category);
-        const allCats = Array.from(new Set([...DEFAULT_CATS, ...prodCats]));
-        setCats(allCats);
-      }
-      if (wd && typeof wd === 'object' && !wd.error && 'totalRevenue' in wd) {
-        setWallet(wd);
-      }
+      if (Array.isArray(pd)) setProducts(pd);
+      if (wd && !wd.error) setWallet(wd);
     } catch { }
     setLoading(false);
   }, []);
 
-  useEffect(() => { 
-    load();
-    const t = setInterval(() => load(), 30000); // 30s auto-refresh
-    return () => clearInterval(t);
-  }, [load]);
-
-  useEffect(() => {
-    if (selectedOrder?.user_id?._id) {
-       const history = orders.filter(o => o.user_id?._id === selectedOrder.user_id?._id && o._id !== selectedOrder._id);
-       setUserHistory(history);
-    }
-  }, [selectedOrder, orders]);
+  useEffect(() => { load(); }, [load]);
 
   const updateOrder = async (id: string, updates: any) => {
     setUpdatingId(id);
@@ -128,11 +109,7 @@ export default function AgencyPage() {
             body: JSON.stringify(updates) 
         });
         if (res.ok) await load();
-        else {
-            const d = await res.json();
-            alert(`Update Failed: ${d.error || 'Check permissions'}`);
-        }
-    } catch { alert('Network Error updating order'); }
+    } catch { }
     setUpdatingId(null);
   };
 
@@ -145,19 +122,13 @@ export default function AgencyPage() {
         min_qty: Number(pf.min_qty),
         variants: pf.variants.map(v => ({...v, price: Number(v.price), stock: Number(v.stock), min_qty: Number(v.min_qty)}))
     };
-    if (!pf.offer) delete (body as any).offer;
-
-    console.log('DEBUG: Saving Product with Variants:', JSON.stringify(body, null, 2));
-
     try {
       const url = '/api/agency/products';
       const method = modal === 'add' ? 'POST' : 'PATCH';
       const payload = modal === 'edit' ? { productId: sel!._id, ...body } : body;
       const r = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!r.ok) { setErr(`Server Error (${r.status}). Please try again later.`); setSaving(false); return; }
-      const d = await r.json();
-      if (!d.success) { setErr(d.error || 'Failed'); setSaving(false); return; }
-      setModal(null); setPf(emptyP); load();
+      if (r.ok) { setModal(null); setPf(emptyP); load(); }
+      else { const d = await r.json(); setErr(d.error || 'Failed'); }
     } catch { setErr('Something went wrong.'); }
     setSaving(false);
   };
@@ -171,44 +142,22 @@ export default function AgencyPage() {
   const openEdit = (p: Product) => {
     setSel(p);
     setPf({ 
-        name_en: p.name_en, 
-        name_hi: p.name_hi, 
-        category: p.category, 
-        price: String(p.price), 
-        stock: String(p.stock), 
-        unit: p.unit || 'kg', 
-        min_qty: String(p.min_qty || 1), 
-        status: p.status, 
-        offer: p.offer || '',
-        image_url: p.image_url || '',
-        variants: p.variants || []
+        name_en: p.name_en, name_hi: p.name_hi, category: p.category, 
+        price: String(p.price), stock: String(p.stock), unit: p.unit || 'kg', 
+        min_qty: String(p.min_qty || 1), status: p.status, offer: p.offer || '',
+        image_url: p.image_url || '', variants: p.variants || []
     });
     setModal('edit');
   };
 
-  const addVariant = () => {
-    setPf(p => ({
-        ...p,
-        variants: [...p.variants, { variant_name: '', price: 0, stock: 0, unit: 'pcs', min_qty: 1, status: 'In Stock' }]
-    }));
-  };
-
-  const removeVariant = (idx: number) => {
-    setPf(p => ({ ...p, variants: p.variants.filter((_, i) => i !== idx) }));
-  };
-
-  const updateVariant = (idx: number, field: string, val: any) => {
-    setPf(p => ({
-        ...p,
-        variants: p.variants.map((v, i) => i === idx ? { ...v, [field]: val } : v)
-    }));
-  };
+  const addVariant = () => setPf(p => ({ ...p, variants: [...p.variants, { variant_name: '', price: 0, stock: 0, unit: 'pcs', min_qty: 1, status: 'In Stock' }] }));
+  const removeVariant = (idx: number) => setPf(p => ({ ...p, variants: p.variants.filter((_, i) => i !== idx) }));
+  const updateVariant = (idx: number, field: string, val: any) => setPf(p => ({ ...p, variants: p.variants.map((v, i) => i === idx ? { ...v, [field]: val } : v) }));
 
   const addCustomCat = () => {
     const trimmed = customCat.trim();
-    if (trimmed && !cats.includes(trimmed)) {
-      setCats([...cats, trimmed]); setPf(p => ({ ...p, category: trimmed }));
-    } else if (trimmed) { setPf(p => ({ ...p, category: trimmed })); }
+    if (trimmed && !cats.includes(trimmed)) setCats([...cats, trimmed]);
+    setPf(p => ({ ...p, category: trimmed || p.category }));
     setCustomCat('');
   };
 
@@ -216,381 +165,241 @@ export default function AgencyPage() {
   const filteredProducts = products.filter(p => p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading) return (
-    <div style={{
-      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem', animation: 'fadeIn 0.3s ease-out'
-    }}>
-      <div style={{
-        width: 120, height: 120, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite ease-in-out'
-      }}>
-        <img src="/logo.png" alt="KiranaHub" style={{ width: '100%', height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', fontFamily: 'Outfit, sans-serif' }}>Agency Dashboard</p>
-        <div style={{ height: 4, width: 140, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', margin: '0 auto' }}>
-          <div style={{ height: '100%', width: '40%', background: '#2563eb', borderRadius: 99, animation: 'loadProgress 1.5s infinite ease-in-out' }} />
-        </div>
-      </div>
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); opacity: 0.8; } }
-        @keyframes bounce { from { transform: translateY(2px); } to { transform: translateY(-4px); } }
-        @keyframes loadProgress { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-      `}</style>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ffffff', gap: '1.5rem' }}>
+      <img src="/logo.png" alt="KiranaHub" style={{ width: 80, height: 'auto', animation: 'bounce 0.8s infinite alternate' }} />
+      <p style={{ fontWeight: 800, color: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>Agency Dashboard Loading...</p>
+      <style>{`@keyframes bounce { from { transform: translateY(2px); } to { transform: translateY(-4px); } }`}</style>
     </div>
   );
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.25rem' }}>
+    <>
+      <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1.25rem' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
                 <p style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#16a34a' }}>Agency Dashboard</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f0fdf4', color: '#16a34a', padding: '0.2rem 0.5rem', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, border: '1px solid #bbf7d0' }}>
-                    <div style={{ width: 5, height: 5, background: '#16a34a', borderRadius: '50%', boxShadow: '0 0 6px #16a34a', animation: 'pulse 1.5s infinite' }} />
-                    LIVE SYNC
+                  <div style={{ width: 5, height: 5, background: '#16a34a', borderRadius: '50%' }} /> LIVE SYNC
                 </div>
+              </div>
+              <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif', fontWeight: 900 }}>My Agency Control</h1>
+              <p style={{ color: '#64748b', fontSize: '0.9375rem', fontWeight: 600 }}>Manage products, fulfil orders, and track your wholesale earnings instantly.</p>
             </div>
-            <h1 style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', marginBottom: '0.25rem', fontFamily: 'Outfit,sans-serif', fontWeight: 900 }}>My Agency Control</h1>
-            <p style={{ color: '#64748b', fontSize: '0.9375rem', fontWeight: 600 }}>Manage products, fulfil orders, and track your wholesale earnings instantly.</p>
+            <button onClick={() => load()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: '0.875rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+              <RefreshCw size={15} /> Refresh Dashboard
+            </button>
           </div>
-          <button onClick={() => load()} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: '0.875rem', fontWeight: 700, color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}>
-            <RefreshCw size={15} className={loading && !updatingId ? 'spin' : ''} /> {loading && !updatingId ? 'Syncing...' : 'Refresh Dashboard'}
-          </button>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          {[
-            { l: 'Revenue', v: `₹${wallet.totalRevenue.toLocaleString()}` },
-            { l: 'Pending', v: `₹${wallet.pendingAmount.toLocaleString()}` },
-            { l: 'Total Orders', v: wallet.orderCount },
-            { l: 'My Products', v: products.length },
-            { l: 'Cash Orders', v: orders.filter(o => o.payment_method === 'Cash').length },
-            { l: 'Online Orders', v: orders.filter(o => o.payment_method === 'Online').length },
-          ].map((s, i) => (
-            <div key={i} style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 14, padding: '1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94a3b8', marginBottom: '0.5rem' }}>{s.l}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit,sans-serif', letterSpacing: '-0.04em', color: '#0f172a' }}>{s.v}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem', gap: '0.2rem', width: 'fit-content', overflowX: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {[
-              { id: 'overview', icon: <TrendingUp size={16} />, label: 'Overview' },
-              { id: 'orders', icon: <ShoppingBag size={16} />, label: `Orders (${orders.length})` },
-              { id: 'products', icon: <Package size={16} />, label: `Products (${products.length})` },
-            ].map(t => (
-              <button key={t.id} onClick={() => { setTab(t.id as any); setSearchQuery(''); }} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s', background: tab === t.id ? '#fff' : 'transparent', color: tab === t.id ? '#0f172a' : '#64748b', boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>
-                {t.icon} {t.label}
-              </button>
+              { l: 'Revenue', v: `₹${wallet.totalRevenue.toLocaleString()}` },
+              { l: 'Pending', v: `₹${wallet.pendingAmount.toLocaleString()}` },
+              { l: 'Orders', v: wallet.orderCount },
+              { l: 'Products', v: products.length },
+            ].map((s, i) => (
+              <div key={i} style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 14, padding: '1.25rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', marginBottom: '0.5rem' }}>{s.l}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit,sans-serif', color: '#0f172a' }}>{s.v}</div>
+              </div>
             ))}
           </div>
 
-          {tab !== 'overview' && (
-            <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
-              <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input type="text" placeholder={`Search ${tab}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: 12, border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: '#fff' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 12, padding: '0.25rem', gap: '0.2rem' }}>
+              {['overview', 'orders', 'products'].map(t => (
+                <button key={t} onClick={() => { setTab(t as any); setSearchQuery(''); }} style={{ padding: '0.5rem 1.125rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, background: tab === t ? '#fff' : 'transparent', color: tab === t ? '#0f172a' : '#64748b', boxShadow: tab === t ? '0 1px 4px rgba(0,0,0,0.08)' : 'none' }}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
-
-        {tab === 'products' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700 }}>My Products</h2>
-              <button onClick={() => { setErr(''); setPf(emptyP); setModal('add'); }}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.25rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer' }}>
-                <Plus size={16} /> Add Product
-              </button>
-            </div>
-            {filteredProducts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '4rem', border: '1.5px dashed #e2e8f0', borderRadius: 16, color: '#94a3b8' }}>
-                <Package size={40} strokeWidth={1} style={{ margin: '0 auto 1rem' }} />
-                <p>{searchQuery ? 'No products match your search.' : 'No products yet. Click "Add Product" to get started.'}</p>
-              </div>
-            ) : (
-              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 800 }}>
-                    <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Product', 'Category', 'Price/Unit', 'Variants', 'Stock', 'Status', 'Actions'].map(h => (
-                        <th key={h} style={{ padding: '0.875rem 1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>
-                      {filteredProducts.map(p => (
-                        <tr key={p._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '1rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              {p.image_url ? (
-                                <img src={p.image_url} alt={p.name_en} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} />
-                              ) : (
-                                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>No Img</div>
-                              )}
-                              <div>
-                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name_en}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.name_hi}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '1rem', color: '#475569' }}>{p.category}</td>
-                          <td style={{ padding: '1rem', fontWeight: 700 }}>₹{p.price}/ {p.unit}</td>
-                          <td style={{ padding: '1rem' }}>
-                            {p.variants && p.variants.length > 0 ? (
-                                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                                    {p.variants.map((v, i) => <span key={i} style={{ fontSize: '0.6rem', padding: '2px 6px', background: '#f1f5f9', borderRadius: 4, fontWeight: 700 }}>{v.variant_name}</span>)}
-                                </div>
-                            ) : <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>No variants</span>}
-                          </td>
-                          <td style={{ padding: '1rem' }}>{p.stock}</td>
-                          <td style={{ padding: '1rem' }}><Badge s={p.status} /></td>
-                          <td style={{ padding: '1rem' }}>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button onClick={() => openEdit(p)} style={{ padding: '0.35rem 0.625rem', borderRadius: 6, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                              <button onClick={() => deleteProd(p._id)} style={{ padding: '0.35rem 0.625rem', borderRadius: 6, border: '1.5px solid #fee2e2', background: '#fff5f5', color: '#dc2626', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            {tab !== 'overview' && (
+              <div style={{ position: 'relative', flex: 1, maxWidth: 300 }}>
+                <Search size={16} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input type="text" placeholder={`Search ${tab}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: 12, border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: '#fff' }} />
               </div>
             )}
           </div>
-        )}
 
-        {tab === 'orders' && (
-            /* ... previous orders table code ... */
-            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: 1000 }}>
-                    <thead><tr style={{ background: '#f8fafc' }}>
-                      {['Customer', 'Order ID', 'Items', 'Amount', 'Pay Type', 'Pay Status', 'Order Status', 'Date', 'View'].map(h => (
-                        <th key={h} style={{ padding: '1rem', textAlign: 'left', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>
-                      {filteredOrders.map(o => {
-                        const isUpdating = updatingId === o._id;
-                        return (
-                          <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9', opacity: isUpdating ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-                            <td style={{ padding: '1rem' }}>
-                              <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{o.user_id?.name || '—'}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>📞 {o.user_id?.phone || '—'}</div>
-                            </td>
-                            <td style={{ padding: '1rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>#{o.order_id?.slice(-8).toUpperCase() || o._id.slice(-8).toUpperCase()}</td>
-                            <td style={{ padding: '1rem', color: '#64748b', fontWeight: 600 }}>{o.products?.length || 0} ITEMS</td>
-                            <td style={{ padding: '1rem', fontWeight: 900, color: '#0f172a', fontSize: '1rem' }}>₹{o.total_amount}</td>
-                            <td style={{ padding: '1rem' }}>
-                              {o.payment_method === 'Cash' ? <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#d97706', fontWeight: 800, fontSize: '0.75rem', background: '#fffbeb', padding: '0.25rem 0.6rem', borderRadius: 8 }}>CASH</span> : <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#2563eb', fontWeight: 800, fontSize: '0.75rem', background: '#eff6ff', padding: '0.25rem 0.6rem', borderRadius: 8 }}>ONLINE</span>}
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <Badge s={o.payment_status} />
-                                {o.payment_status === 'Unpaid' && (
-                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { payment_status: 'Paid' })} 
-                                        style={{ padding: '0.4rem 0.6rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(22,163,74,0.2)' }}>
-                                        {isUpdating ? 'Wait...' : 'Mark Paid'}
-                                    </button>
-                                )}
-                              </div>
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <Badge s={o.status} />
-                                {o.status === 'Pending' && (
-                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Accepted' })} 
-                                        style={{ padding: '0.4rem 0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59,130,246,0.2)' }}>
-                                        {isUpdating ? 'Wait...' : 'Accept Order'}
-                                    </button>
-                                )}
-                                {o.status === 'Accepted' && (
-                                    <button disabled={isUpdating} onClick={() => updateOrder(o._id, { status: 'Delivered' })} 
-                                        style={{ padding: '0.4rem 0.6rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
-                                        {isUpdating ? 'Wait...' : 'Deliver Order'}
-                                    </button>
-                                )}
-                              </div>
-                            </td>
-                            <td style={{ padding: '1rem', color: '#94a3b8', fontSize: '0.8125rem', fontWeight: 700 }}>{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
-                            <td style={{ padding: '1rem' }}>
-                              <button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Eye size={16} color="#64748b" /></button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-        )}
+          {tab === 'products' && (
+            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '1.5px solid #f1f5f9' }}>
+                  <tr style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b' }}>
+                    <th style={{ padding: '1rem', textAlign: 'left' }}>Product</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Price</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Stock</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Status</th>
+                    <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(p => (
+                    <tr key={p._id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <img src={p.image_url || '/logo.png'} style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'contain', background: '#f8fafc', border: '1px solid #f1f5f9' }} />
+                        <div><div style={{ fontWeight: 800, fontSize: '0.875rem' }}>{p.name_en}</div><div style={{ fontSize: '0.7rem', color: '#64748b' }}>{p.category}</div></div>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 700 }}>₹{p.price}/{p.unit}</td>
+                      <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, color: p.stock < 10 ? '#dc2626' : '#0f172a' }}>{p.stock}</td>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}><Badge s={p.status} /></td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                        <button onClick={() => openEdit(p)} style={{ padding: '0.4rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', marginRight: '0.5rem' }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteProd(p._id)} style={{ padding: '0.4rem', borderRadius: 8, background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button onClick={() => { setPf(emptyP); setModal('add'); }} style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#16a34a', color: '#fff', width: 60, height: 60, borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 8px 25px rgba(22,163,74,0.4)', zIndex: 100 }}><Plus size={28} /></button>
+            </div>
+          )}
 
-        {tab === 'overview' && (
+          {tab === 'orders' && (
+            <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #f1f5f9', overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '1.5px solid #f1f5f9' }}>
+                  <tr style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#64748b' }}>
+                    <th style={{ padding: '1rem', textAlign: 'left' }}>Order</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Total</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Status</th>
+                    <th style={{ padding: '1rem', textAlign: 'right' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map(o => (
+                    <tr key={o._id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '1rem' }}><div style={{ fontWeight: 800 }}>#{o.order_id?.slice(-8)}</div><div style={{ fontSize: '0.7rem', color: '#64748b' }}>{o.user_id?.name}</div></td>
+                      <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 800 }}>₹{o.total_amount}</td>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                         <select value={o.status} onChange={(e) => updateOrder(o._id, { status: e.target.value })} style={{ padding: '0.4rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, border: '1.5px solid #e2e8f0' }}>
+                            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                         </select>
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}><button onClick={() => { setSelectedOrder(o); setModal('details'); }} style={{ padding: '0.5rem 1rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 10, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>Details</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {tab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.5rem' }}>
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>Recent Orders</h3>
-              </div>
-              {orders.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>No orders yet.</p> : orders.slice(0, 5).map(o => (
-                <div key={o._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0', borderBottom: '1px solid #f1f5f9' }}>
-                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>#{o.order_id?.slice(-6)}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>₹{o.total_amount} · {o.payment_method}</div>
-                   </div>
-                   <Badge s={o.status} />
-                </div>
-              ))}
-            </div>
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem' }}>Top Products</h3>
-              {products.slice(0, 5).map(p => (
-                <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{p.name_en}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>₹{p.price}/{p.unit}</div>
+              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.25rem' }}>Pending Orders</h3>
+                {orders.filter(o => o.status === 'Pending').map(o => (
+                  <div key={o._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: 12, marginBottom: '0.5rem' }}>
+                    <div><div style={{ fontWeight: 800 }}>#{o.order_id?.slice(-8)}</div><div style={{ fontSize: '0.75rem', color: '#64748b' }}>₹{o.total_amount}</div></div>
+                    <Badge s={o.status} />
                   </div>
-                  <Badge s={p.status} />
-                </div>
-              ))}
+                ))}
+              </div>
+              <div style={{ background: '#0f172a', borderRadius: 16, padding: '1.5rem', color: '#fff' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.25rem' }}>Stock Alerts</h3>
+                {products.filter(p => p.stock < 20).map(p => (
+                  <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 12, marginBottom: '0.5rem' }}>
+                    <div><div style={{ fontWeight: 700 }}>{p.name_en}</div><div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{p.stock} units left</div></div>
+                    <Badge s={p.status} />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+        </div>
       </div>
 
+      {/* ── MODALS (Liberated at Root) ── */}
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Add New Product' : 'Edit Product'} onClose={() => setModal(null)} maxWidth={700}>
-          {err && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: 8, color: '#dc2626', fontSize: '0.875rem' }}>{err}</div>}
-          <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
-            <div style={{ display: 'grid', gap: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
-                <SI label="NameEn"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
-                <SI label="NameHi"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
-                </div>
-                <SI label="Product Image URL"><Inp placeholder="https://example.com/photo.jpg" value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))}/></SI>
-                <SI label="Category">
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}>
-                            {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                            <input 
-                                placeholder="New category..." 
-                                value={customCat} 
-                                onChange={e => setCustomCat(e.target.value)} 
-                                style={{ width: 120, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: '0.875rem' }} 
-                            />
-                            <button 
-                                type="button" 
-                                onClick={addCustomCat} 
-                                style={{ padding: '0 0.75rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
-                </SI>
-                <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: 14, border: '1.5px solid #e2e8f0' }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Default Configuration</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <SI label="Price (₹)"><Inp type="number" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
-                    <SI label="Unit"><select value={pf.unit} onChange={(e: any) => setPf(p => ({ ...p, unit: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> {UNITS.map(u => <option key={u} value={u}>{u}</option>)} </select></SI>
-                    <SI label="Min Qty"><Inp type="number" value={pf.min_qty} onChange={(e: any) => setPf(p => ({ ...p, min_qty: e.target.value }))} /></SI>
-                    <SI label="Stock"><Inp type="number" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
-                    <SI label="Status"><select value={pf.status} onChange={(e: any) => setPf(p => ({ ...p, status: e.target.value }))} style={{ padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> <option value="In Stock">In Stock</option><option value="Out of Stock">Out of Stock</option> </select></SI>
-                    </div>
-                </div>
+        <Modal title={modal === 'add' ? 'Add Product' : 'Edit Product'} onClose={() => setModal(null)} maxWidth={800}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+               <SI label="Name (EN)"><Inp value={pf.name_en} onChange={(e: any) => setPf(p => ({ ...p, name_en: e.target.value }))} /></SI>
+               <SI label="Name (HI)"><Inp value={pf.name_hi} onChange={(e: any) => setPf(p => ({ ...p, name_hi: e.target.value }))} /></SI>
+               <SI label="Image URL"><Inp value={pf.image_url} onChange={(e: any) => setPf(p => ({ ...p, image_url: e.target.value }))} /></SI>
+               <SI label="Category">
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <select value={pf.category} onChange={(e: any) => setPf(p => ({ ...p, category: e.target.value }))} style={{ flex: 1, padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: 8 }}> {cats.map(c => <option key={c} value={c}>{c}</option>)} </select>
+                    <button onClick={() => { const n = prompt('New Category:'); if (n) setCats([...cats, n]); }} style={{ padding: '0 0.8rem', background: '#f1f5f9', border: 'none', borderRadius: 8 }}>+</button>
+                  </div>
+               </SI>
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <SI label="Price"><Inp type="number" value={pf.price} onChange={(e: any) => setPf(p => ({ ...p, price: e.target.value }))} /></SI>
+                  <SI label="Stock"><Inp type="number" value={pf.stock} onChange={(e: any) => setPf(p => ({ ...p, stock: e.target.value }))} /></SI>
+               </div>
+               <button onClick={saveProduct} disabled={saving} style={{ width: '100%', padding: '1rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 900, cursor: 'pointer' }}>{saving ? 'Saving...' : 'Save Product'}</button>
             </div>
-
             <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Packaging Variants (Box, Pouch, etc.)</p>
-                    <button onClick={addVariant} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.8rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}> <Plus size={14} /> Add Variant </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: 400, overflow: 'auto' }}>
-                    {pf.variants.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', border: '2px dashed #e2e8f0', borderRadius: 12, color: '#94a3b8', fontSize: '0.85rem' }}>No alternate packaging added.<br/>Add variants like "Box" or "Pouch" here.</div>}
-                    {pf.variants.map((v, i) => (
-                        <div key={i} style={{ padding: '1rem', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12, position: 'relative' }}>
-                            <button onClick={() => removeVariant(i)} style={{ position: 'absolute', top: 8, right: 8, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                            <SI label="Variant Name (e.g. Box, 5kg Pouch)"><Inp placeholder="Box / Pouch / Case" value={v.variant_name} onChange={(e: any) => updateVariant(i, 'variant_name', e.target.value)} style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }} /></SI>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <SI label="Price (₹)"><Inp type="number" value={v.price} onChange={(e: any) => updateVariant(i, 'price', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                                <SI label="Stock"><Inp type="number" value={v.stock} onChange={(e: any) => updateVariant(i, 'stock', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                                <SI label="Min Qty"><Inp type="number" value={v.min_qty} onChange={(e: any) => updateVariant(i, 'min_qty', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>Packaging Variants</p>
+                  <button onClick={addVariant} style={{ background: '#0f172a', color: '#fff', padding: '0.3rem 0.7rem', borderRadius: 8, border: 'none', cursor: 'pointer' }}>+ Add</button>
+               </div>
+               <div style={{ maxHeight: 350, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {pf.variants.map((v, i) => (
+                    <div key={i} style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, position: 'relative' }}>
+                      <button onClick={() => removeVariant(i)} style={{ position: 'absolute', top: 5, right: 5, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                      <SI label="Variant Name"><Inp value={v.variant_name} onChange={(e: any) => updateVariant(i, 'variant_name', e.target.value)} placeholder="e.g. 5kg Box" style={{ padding: '0.4rem' }} /></SI>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <SI label="Price"><Inp type="number" value={v.price} onChange={(e: any) => updateVariant(i, 'price', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
+                        <SI label="Stock"><Inp type="number" value={v.stock} onChange={(e: any) => updateVariant(i, 'stock', e.target.value)} style={{ padding: '0.4rem' }} /></SI>
+                      </div>
+                    </div>
+                  ))}
+               </div>
             </div>
           </div>
-          <button onClick={saveProduct} disabled={saving} style={{ width: '100%', marginTop: '2rem', padding: '1rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontSize: '1rem', fontWeight: 800, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}> {saving ? 'Saving...' : 'Save Product & Variants'} </button>
+          {err && <p style={{ color: '#ef4444', marginTop: '1rem' }}>{err}</p>}
         </Modal>
       )}
 
       {modal === 'details' && selectedOrder && (
-          <Modal title="Order Details" onClose={() => setModal(null)}>
-              {/* Previous details modal content remains same */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                    <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8' }}>Placed On</div>
-                        <div style={{ fontWeight: 700 }}>{new Date(selectedOrder.createdAt).toLocaleString()}</div>
-                    </div>
-                    <Badge s={selectedOrder.status} />
-                </div>
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 14 }}>
-                    <div style={{ fontWeight: 800 }}>{selectedOrder.user_id?.name}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#475569' }}>📞 {selectedOrder.user_id?.phone}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 8 }}>📍 {selectedOrder.user_id?.address}</div>
-                </div>
-                <div style={{ border: '1.5px solid #f1f5f9', borderRadius: 12, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ background: '#f8fafc' }}>
-                            <tr style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: '#94a3b8' }}>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>Item Details</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Price</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Qty</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {selectedOrder.products.map((p: any, i: number) => (
-                                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <td style={{ padding: '0.75rem 1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            {p.image_url ? (
-                                                <img src={p.image_url} alt={p.name_en || p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'contain', background: '#fff', border: '1px solid #f1f5f9' }} />
-                                            ) : (
-                                                <div style={{ width: 32, height: 32, borderRadius: 6, background: '#f8fafc', border: '1px solid #e2e8f0' }} />
-                                            )}
-                                            <div>
-                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.name_en || p.name || p.product_id?.name_en || 'Product'}</div>
-                                                {p.variant_name && <div style={{ fontSize: '0.65rem', color: '#2563eb', fontWeight: 800, background: '#eff6ff', padding: '0.1rem 0.35rem', borderRadius: 4, display: 'inline-block', marginTop: 3 }}>{p.variant_name}</div>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>₹{p.price}</td>
-                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 800, color: '#0f172a' }}>{p.quantity}</td>
-                                    <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '0.9rem', color: '#0f172a' }}>₹{p.total}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        <tfoot style={{ background: '#0f172a', color: '#fff' }}>
-                            <tr>
-                                <td colSpan={3} style={{ padding: '0.875rem 1rem', fontWeight: 700 }}>Grand Total</td>
-                                <td style={{ padding: '0.875rem 1rem', textAlign: 'right', fontWeight: 900, fontSize: '1.25rem' }}>₹{selectedOrder.total_amount}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-              </div>
-          </Modal>
+        <Modal title={`Order Details #${selectedOrder.order_id?.slice(-8)}`} onClose={() => setModal(null)} maxWidth={600}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+              <div><div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>Placed On</div><div style={{ fontWeight: 800 }}>{new Date(selectedOrder.createdAt).toLocaleString()}</div></div>
+              <Badge s={selectedOrder.status} />
+            </div>
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: 16 }}>
+              <div style={{ fontWeight: 800 }}>{selectedOrder.user_id?.name}</div>
+              <div style={{ fontSize: '0.875rem', color: '#475569' }}>📞 {selectedOrder.user_id?.phone}</div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>📍 {selectedOrder.user_id?.address}</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}><th style={{ textAlign: 'left', padding: '0.5rem' }}>Item</th><th style={{ textAlign: 'center' }}>Qty</th><th style={{ textAlign: 'right' }}>Total</th></tr></thead>
+              <tbody>
+                {selectedOrder.products.map((p: any, i: number) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '0.5rem', fontSize: '0.85rem', fontWeight: 700 }}>{p.name_en || p.name} {p.variant_name && `(${p.variant_name})`}</td>
+                    <td style={{ textAlign: 'center' }}>{p.quantity}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 800 }}>₹{p.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr><td colSpan={2} style={{ padding: '1rem 0.5rem', fontWeight: 700 }}>Grand Total</td><td style={{ textAlign: 'right', fontWeight: 900, fontSize: '1.125rem' }}>₹{selectedOrder.total_amount}</td></tr>
+              </tfoot>
+            </table>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button 
+                onClick={() => updateOrder(selectedOrder._id, { status: 'Delivered' })} 
+                style={{ flex: 1, padding: '0.875rem', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, cursor: 'pointer' }}
+              >
+                 Mark Delivered
+              </button>
+              <button 
+                onClick={() => { if(confirm('Cancel Order?')) updateOrder(selectedOrder._id, { status: 'Cancelled' }) }} 
+                style={{ padding: '0.875rem', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 12, fontWeight: 800, cursor: 'pointer' }}
+              >
+                 <Trash2 size={18} />
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
-    </div>
+    </>
   );
 }

@@ -4,6 +4,17 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 
 ---
 
+## 🎖️ [CRITICAL] 0. STABILITY & UI/UX INTEGRITY (HARD-SAVED)
+**Baseline Version:** April 3rd, 2026 (Stabilized Production).
+This version is the "Golden Reference" for the KiranaHub ecosystem. Any future modifications **MUST** strictly adhere to the following "Hard-Logic" rules:
+1. **Modal Viewport Centering:** Never use an animation or parent container that traps `fixed` positioning. Modals must always anchor to the viewport `(transform: none)` and be perfectly centered.
+2. **Pro-Wholesale Typing:** All quantity inputs must support **Auto-Select-on-Focus**, **Instant Stock Capping**, and a **'0' Fallback** on backspace to prevent flickering.
+3. **Zero-Latency Cart:** Shopper actions must always be **Optimistic**. The UI must update instantly, with database synchronization handled in the background.
+4. **Persistent Sync:** The Cart must remain synchronized with `localStorage` at all times.
+5. **Multi-Step Thinking:** Before any code edit, ensure that the change does not inadvertently restore old glitches (like the Eye-Button viewport trap).
+
+---
+
 ## 🏛️ 1. Architecture & Design Patterns
 - **Framework:** Next.js 14 (App Router).
 - **Styling:** Vanilla CSS-in-JS and custom modules for a professional, mobile-first design.

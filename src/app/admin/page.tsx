@@ -206,8 +206,9 @@ export default function AdminPage() {
     );
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-            {/* Sidebar */}
+        <>
+            <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+                {/* Sidebar */}
             <div style={{ width: 280, background: '#0f172a', color: '#fff', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem', padding: '0 0.5rem' }}>
                     <img src="/logo.png" alt="KiranaHub" style={{ width: 'auto', height: 48, borderRadius: 8, background: '#fff' }} />
@@ -820,9 +821,10 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
+        </div>
 
-            {/* ── MODAL: Order Details ── */}
-            {modal === 'orderDetails' && selected && (
+        {/* ── MODALS (Liberated at root level) ── */}
+        {modal === 'orderDetails' && selected && (
                 <Modal title={`Order Details: #${selected.order_id?.slice(-8) || selected._id.slice(-8)}`} onClose={() => setModal(null)}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
@@ -1125,6 +1127,6 @@ export default function AdminPage() {
                     </form>
                 </Modal>
             )}
-        </div>
+        </>
     );
 }
