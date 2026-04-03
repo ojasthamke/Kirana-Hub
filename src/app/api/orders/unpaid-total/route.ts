@@ -17,8 +17,9 @@ export async function GET(req: Request) {
         }, 'total_amount');
 
         const totalUnpaid = (orders || []).reduce((sum, order) => sum + Number(order.total_amount), 0);
+        const unpaidCount = (orders || []).length;
 
-        return NextResponse.json({ totalUnpaid });
+        return NextResponse.json({ totalUnpaid, unpaidCount });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

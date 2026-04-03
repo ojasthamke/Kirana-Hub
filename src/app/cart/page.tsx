@@ -75,12 +75,20 @@ export default function CartPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    cartItems: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
+                    cartItems: cart.map(i => ({ 
+                        productId: i.productId, 
+                        quantity: i.quantity,
+                        variantName: i.variantName 
+                    })),
                     payment_method: paymentMethod
                 })
             });
             const data = await res.json();
-            if (data.success) { setOrderId(data.masterOrderId); clearCart(); }
+            if (data.success) { 
+                setOrderId(data.masterOrderId); 
+                clearCart(); 
+                window.dispatchEvent(new CustomEvent('refresh-stats'));
+            }
             else setError(data.error || 'Failed to place order. Please try again.');
         } catch { setError('Please login to checkout.'); }
         finally { setCheckingOut(false); }

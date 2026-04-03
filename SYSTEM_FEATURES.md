@@ -53,8 +53,12 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 - **Vertical Filtering:** Automatic logic that shows products only from agencies matching the user's business type.
 
 ### Navbar Actions
-- **User Profile Pill:** Clickable status indicator.
+- **User Profile Pill (Interactive Stats):** 
+  - Clicking the name pill opens a premium popup showing the **Unpaid Balance** and **Open Order Count**.
+  - Includes a quick-link to the Orders page.
+  - **Live Syncing:** The balance and counts are polled every 15 seconds in the background.
 - **Options Menu (☰):** Sidebar with links to Orders, Reports, and Business Settings.
+- **Global Event Bus:** The Navbar listens for a `refresh-stats` event to instantly update the profile stats when an order is placed, edited, or cancelled on other pages.
 - **Business Vertical Drawer:** A side-menu allowing users to update their business type (e.g., switching from Kirana to Restaurant).
 - **Cart Bottom Bar (Mobile):** Shows running total and "View Cart" button when items are present.
 - **Logout Button:** Clears all session data and redirects.
@@ -71,9 +75,13 @@ This document is the "Source of Truth" for the KiranaHub ecosystem. It covers ev
 
 ### Orders History (`/orders`)
 - **Unpaid Dues Badge:** Red banner showing exactly how much is owed to all agencies.
+- **Real-Time Calculation:** The page re-sums the totals of all 'Unpaid' orders instantly upon any edit or refresh.
 - **Refresh Button:** Atomic sync with server.
-- **Edit Order (Yellow Button):** Allow quantity changes on orders that haven't been accepted yet.
-- **Cancel Order (Red Button):** Mark order as `Cancelled`.
+- **Edit Order (Yellow Button):** 
+  - Allows quantity changes on orders that haven't been accepted yet.
+  - **Dynamic Billing:** Updating quantities instantly recomputes sub-totals and the overall order total in the database.
+  - **Side-Effect:** Triggers the global `refresh-stats` event to keep the Navbar stats in sync.
+- **Cancel Order (Red Button):** Mark order as `Cancelled`. Also triggers a global stat refresh.
 - **Expandable Items:** Tap to see the full manifest of ordered products with photos.
 
 ---

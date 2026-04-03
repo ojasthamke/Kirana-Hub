@@ -16,6 +16,8 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
     const { totalItems, totalPrice } = useCart();
     const [menuOpen, setMenuOpen] = useState(false);
     const [unpaidAmount, setUnpaidAmount] = useState<number | null>(null);
+    const [unpaidCount, setUnpaidCount] = useState<number>(0);
+    const [statsOpen, setStatsOpen] = useState(false);
     const [session, setSession] = useState<TokenPayload | null>(serverSession);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [verticals, setVerticals] = useState<any[]>([]);
@@ -45,6 +47,26 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
         }
     }, [menuOpen, drawerOpen]);
 
+
+    useEffect(() => {
+        if (session && session.role === 'user') {
+            const fetchStats = () => {
+                apiFetch('/api/orders/unpaid-total').then(r => r.json()).then(data => {
+                    if (data.totalUnpaid !== undefined) setUnpaidAmount(data.totalUnpaid);
+                    if (data.unpaidCount !== undefined) setUnpaidCount(data.unpaidCount);
+                });
+            };
+            fetchStats();
+            const interval = setInterval(fetchStats, 15000); 
+            
+            // Global listener for instant refreshes
+            window.addEventListener('refresh-stats', fetchStats);
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('refresh-stats', fetchStats);
+            };
+        }
+    }, [session]);
 
     useEffect(() => {
         if (session && session.role === 'user') {
@@ -89,21 +111,60 @@ export default function Navbar({ session: serverSession }: { session: TokenPaylo
                     </Link>
 
                     {/* Right: User + Options */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         {session && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                {session.role === 'user' && unpaidAmount !== null && unpaidAmount > 0 && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: 10, background: '#fff5f5', border: '1px solid #fee2e2', color: '#dc2626', marginRight: '0.4rem' }}>
-                                        <CreditCard size={12} />
-                                        <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>₹{unpaidAmount.toLocaleString()} Due</span>
+                            <div style={{ position: 'relative' }}>
+                                <div 
+                                    onClick={() => setStatsOpen(!statsOpen)}
+                                    style={{ 
+                                        display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid var(--gray-100)', 
+                                        padding: '0.35rem 0.6rem', borderRadius: 14, background: statsOpen ? 'var(--gray-50)' : '#fff', cursor: 'pointer', transition: 'all 0.2s',
+                                        boxShadow: statsOpen ? 'none' : '0 2px 5px rgba(0,0,0,0.02)'
+                                    }}
+                                >
+                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #eee, #f9f9f9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <User size={12} color="var(--gray-600)" />
                                     </div>
-                                )}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.25rem 0.5rem', borderRadius: 12, background: 'var(--gray-50)', border: '1px solid var(--gray-100)' }}>
-                                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--gray-200)' }}>
-                                        <User size={12} color="var(--gray-500)" />
-                                    </div>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-700)', maxWidth: '70px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.name.split(' ')[0]}</span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-700)' }}>{session.name.split(' ')[0]}</span>
+                                    {session.role === 'user' && unpaidAmount !== null && unpaidAmount > 0 && <span style={{ width: 6, height: 6, background: '#ef4444', borderRadius: '50%' }} />}
                                 </div>
+
+                                {statsOpen && session.role === 'user' && (
+                                    <>
+                                    <div style={{ position: 'fixed', inset: 0, zIndex: 900 }} onClick={() => setStatsOpen(false)} />
+                                    <div style={{
+                                        position: 'absolute', top: '120%', right: 0, width: '220px', background: '#fff', borderRadius: 20, 
+                                        boxShadow: '0 20px 50px rgba(0,0,0,0.15)', border: '1px solid #f1f5f9', zIndex: 910, padding: '1.25rem',
+                                        animation: 'fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                                    }}>
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Active Accounts</div>
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>₹{unpaidAmount?.toLocaleString() || 0}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 700 }}>Unpaid Balance</div>
+                                                </div>
+                                                <CreditCard size={24} color="#dc2626" opacity={0.3} />
+                                            </div>
+                                        </div>
+                                        
+                                        <div style={{ marginBottom: '1rem', padding: '0.8rem', background: '#f8fafc', borderRadius: 12 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>Open Orders</span>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#16a34a' }}>{unpaidCount}</span>
+                                            </div>
+                                        </div>
+
+                                        <Link href="/orders" onClick={() => setStatsOpen(false)} style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                            width: '100%', padding: '0.6rem', background: '#0f172a', color: '#fff', borderRadius: 10,
+                                            textDecoration: 'none', fontSize: '0.75rem', fontWeight: 700
+                                        }}>
+                                            Manage Orders <ChevronRight size={14} />
+                                        </Link>
+                                    </div>
+                                    </>
+                                )}
                             </div>
                         )}
 

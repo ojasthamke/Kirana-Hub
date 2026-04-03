@@ -65,6 +65,7 @@ export default function UserOrders() {
         if (!confirm('Cancel this order?')) return;
         await apiFetch(`/api/orders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Cancelled' }) });
         loadOrders();
+        window.dispatchEvent(new CustomEvent('refresh-stats'));
     };
 
     const startEdit = (o: Order) => {
@@ -73,9 +74,12 @@ export default function UserOrders() {
     };
 
     const saveEdit = async (orderId: string) => {
-        await apiFetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: editingProducts }) });
-        setEditId(null);
-        loadOrders();
+        const res = await apiFetch(`/api/orders/${orderId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ products: editingProducts }) });
+        if (res.ok) {
+            setEditId(null);
+            loadOrders();
+            window.dispatchEvent(new CustomEvent('refresh-stats'));
+        }
     };
 
     const updateQty = (idx: number, q: number) => {
